@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<script>
+/* GitHub সাইট — google.script.run-এর বদলে fetch → Apps Script (WebApi.js doPost)। পাতার কোড অপরিবর্তিত। */
+var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT1mM9yNMipNPuSu6vDL-1RLZ2k12W9p9KJYvi_DRFuA/exec';
+(function(){
+  function call(fn,args){
+    return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args})})
+      .then(function(r){if(!r.ok)throw new Error('সার্ভার সাড়া দিচ্ছে না ('+r.status+') — একটু পরে আবার চেষ্টা করুন।');
+        return r.json().catch(function(){throw new Error('সার্ভারের উত্তর বোঝা যায়নি।');});},
+        function(){throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');})
+      .then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'অজানা সমস্যা।');return j.data;});
+  }
+  function builder(){
+    var ok=null,fail=null,b=new Proxy({},{get:function(_,k){
+      if(k==='withSuccessHandler')return function(f){ok=f;return b;};
+      if(k==='withFailureHandler')return function(f){fail=f;return b;};
+      if(k==='withUserObject')return function(){return b;};
+      return function(){call(k,[].slice.call(arguments)).then(function(d){if(ok)ok(d);},function(e){if(fail)fail(e);else console.error(e);});};
+    }});
+    return b;
+  }
+  window.google={script:{run:new Proxy({},{get:function(_,k){return builder()[k];}})}};
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retailer Invoice · Staff</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="../icon-staff.png">
+<link rel="apple-touch-icon" href="../icon-staff.png">
+
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>Invoice (Staff)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+/* Staff-এর Invoice পাতা — InvoiceApp-এর একই নকশা, কিন্তু বাকি / payment / সংশোধন / বাতিল / নতুন বই / discount বদলানো নেই */
+:root{
+  --bg:#f4f1ea; --surface:#ffffff; --surface-2:#faf8f3; --ink:#15171c; --ink-2:#555b69; --ink-3:#8b909c;
+  --line:#e6e1d6; --chip:#ece7dc; --brand:#14213d; --brand-2:#23365f; --accent:#b08d57; --accent-soft:#f3ead9;
+  --pos:#1e8a5a; --pos-soft:#e3f3ea; --neg:#c0392b; --neg-soft:#fbe7e4; --warn:#b86e12; --warn-soft:#fdf0dc;
+  --shadow:0 1px 2px rgba(20,22,30,.04),0 8px 28px rgba(20,22,30,.07);
+  --font:'Hind Siliguri','Inter',system-ui,sans-serif; --num:'Inter','Hind Siliguri',system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1014; --surface:#171a21; --surface-2:#1c2028; --ink:#eef0f4; --ink-2:#a9afbd; --ink-3:#717887;
+    --line:#262b35; --chip:#232834; --brand:#0b1226; --brand-2:#1b2a4f; --accent:#d4b483; --accent-soft:#2b2518;
+    --pos:#4cc38a; --pos-soft:#15291f; --neg:#ef6b5b; --neg-soft:#2e1714; --warn:#e9a34a; --warn-soft:#2c2112;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
+body{padding-bottom:calc(96px + var(--safe-b))}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input{font:inherit;color:inherit}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+.top{background:radial-gradient(120% 160% at 100% 0%,rgba(212,180,131,.32),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(76,110,245,.28),transparent 60%),linear-gradient(160deg,var(--brand),var(--brand-2));color:#fff;padding:16px 0 20px;position:sticky;top:0;z-index:26}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),#4c6ef5,transparent);opacity:.8}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);font-family:var(--num);font-weight:600}
+.title{font-size:21px;font-weight:700;margin:1px 0 0}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.who span{opacity:.85;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbtn{padding:7px 11px;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-size:12.5px;font-weight:600}
+
+main{padding-top:14px}
+.card{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.label{font-size:13px;color:var(--ink-2);font-weight:600;margin:18px 2px 8px;display:flex;gap:8px;align-items:center}
+.label::before{content:"";width:4px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),#4c6ef5)}
+.label .count{margin-left:auto;font-size:11.5px;padding:1px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:14px;padding:0 12px;box-shadow:var(--shadow);border:1.5px solid transparent}
+.search:focus-within{border-color:var(--accent)}
+.search svg{width:18px;height:18px;color:var(--ink-3);flex:none}
+.search input{border:0;outline:0;background:none;padding:13px 0;width:100%;font-size:16px}
+.list{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left}
+.item:first-child{border-top:0}
+.item:active{background:var(--surface-2)}
+.av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.av.sm{width:34px;height:34px;border-radius:10px;font-size:13px}
+.grow{flex:1;min-width:0}
+.t1{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t1.wrapline{white-space:normal}
+.t2{font-size:12.5px;color:var(--ink-3)}
+.chev{width:16px;height:16px;color:var(--ink-3);flex:none}
+.chev svg{width:16px;height:16px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 13px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;font-weight:500}
+.chip i{width:9px;height:9px;border-radius:50%;flex:none}
+.empty{text-align:center;color:var(--ink-3);padding:22px 12px;font-size:13.5px}
+.code{font-size:11.5px;font-family:var(--num);color:var(--ink-3);background:var(--chip);padding:1px 6px;border-radius:6px;margin-left:4px;white-space:nowrap;display:inline-block}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.phone{display:flex;align-items:center;gap:5px;margin-top:2px}
+.phone svg{width:12px;height:12px;flex:none;opacity:.7}
+
+/* PIN */
+.login{max-width:380px;margin:40px auto 0;text-align:center}
+.login .lock{width:58px;height:58px;border-radius:18px;margin:0 auto 12px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,var(--brand-2),var(--brand));box-shadow:var(--shadow)}
+.login .lock svg{width:26px;height:26px}
+.login input{width:100%;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);font-size:22px;text-align:center;letter-spacing:.3em;outline:none;font-family:var(--num);margin:14px 0 10px}
+.login input:focus{border-color:var(--accent)}
+.err{color:var(--neg);font-size:13px;min-height:18px;margin-bottom:6px}
+
+/* retailer কার্ড (বইয়ের পাতা) */
+.shopcard{border-top:4px solid #4c6ef5}
+.shopcard.ret{border-top-color:var(--warn)}
+.shop{display:flex;align-items:center;gap:12px}
+.change{font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:6px 12px}
+.today{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.today .d{font-size:13px;color:var(--ink-2)}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px}
+.seg button{padding:8px 12px;border-radius:9px;font-size:13px;color:var(--ink-2);font-weight:600}
+.seg button.on{background:linear-gradient(135deg,#4263eb,#1c7ed6);color:#fff}
+.shopcard.ret .seg button.on{background:linear-gradient(135deg,#f08c00,#e8590c)}
+
+/* বইয়ের লাইন */
+.line{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:11px 12px;margin-bottom:8px;border-left:4px solid #4c6ef5}
+.line.neg{border-left-color:var(--warn)}
+.line .nm{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;font-weight:600;font-size:14px}
+.line .nm .grow{line-height:1.4}
+.sl{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:7px;background:linear-gradient(135deg,#4263eb,#1c7ed6);color:#fff;font-size:11.5px;font-weight:700;flex:none;margin-top:1px}
+.line.neg .sl{background:linear-gradient(135deg,#f08c00,#e8590c)}
+.rm{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--neg-soft);color:var(--neg);flex:none}
+.rm svg{width:14px;height:14px}
+.ctl{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:8px}
+.stepper{display:flex;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stepper button{width:40px;height:42px;font-size:20px;font-weight:600;color:#4263eb}
+.stepper input{width:58px;text-align:center;border:0;background:none;font-size:17px;font-weight:700;outline:none;font-family:var(--num);padding:0}
+.disc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);flex-wrap:wrap}
+.disc b{font-family:var(--num);color:var(--ink-2)}
+.sign{font-size:12px;font-weight:700;padding:5px 9px;border-radius:9px;background:var(--neg-soft);color:var(--neg)}
+.sign.plus{background:var(--pos-soft);color:var(--pos)}
+.lt{text-align:right;font-weight:700;font-family:var(--num);font-size:15px}
+.lt small{display:block;font-size:11px;color:var(--ink-3);font-weight:500}
+.emptybox{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1.5px dashed var(--line);color:var(--ink-2);font-size:14px;font-weight:600;margin-bottom:8px}
+.emptybox svg{width:34px;height:34px;flex:none;color:var(--accent)}
+.emptybox small{font-weight:500;color:var(--ink-3);font-size:12.5px}
+.mrp{font-weight:600;color:var(--ink-2);font-size:13.5px;white-space:nowrap}
+.addbtn{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;flex:none;background:linear-gradient(135deg,#2f9e44,#2b8a3e);color:#fff;font-size:17px;font-weight:700;line-height:1}
+
+/* নিচের Save */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:10px 0 calc(10px + var(--safe-b));box-shadow:0 -6px 24px rgba(0,0,0,.08)}
+.dock .wrap{display:flex;align-items:center;gap:12px}
+.dock .sum{flex:1;min-width:0}
+.dock .sum b{display:block;font-size:20px;font-family:var(--num)}
+.dock .sum span{font-size:12px;color:var(--ink-3)}
+.save{padding:14px 26px;border-radius:14px;background:linear-gradient(135deg,#2f9e44,#1e8a5a);color:#fff;font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(47,158,68,.35)}
+.save[disabled]{opacity:.55;pointer-events:none}
+
+/* Save-এর আগে preview */
+.pv{position:fixed;inset:0;z-index:50;background:rgba(10,12,18,.55);display:flex;align-items:flex-end;justify-content:center}
+.pv-box{background:var(--bg);width:100%;max-width:640px;max-height:92vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+@media (min-width:700px){ .pv{align-items:center} .pv-box{border-radius:22px} }
+.pv-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;font-weight:700;font-size:17px}
+.pv-x{width:34px;height:34px;border-radius:10px;background:var(--chip);font-size:20px;line-height:1}
+.pv-body{overflow-y:auto;padding:0 14px 12px;-webkit-overflow-scrolling:touch}
+.pv-foot{display:flex;gap:10px;padding:12px 14px calc(12px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface)}
+.pv-foot button{flex:1;padding:14px 8px;border-radius:14px;font-weight:700;font-size:15.5px}
+.pv-edit{background:var(--chip);color:var(--ink)}
+.pv-ok{background:var(--pos);color:#fff}
+.pv-ok[disabled]{opacity:.6;pointer-events:none}
+.paper{background:#fff;color:#111;border-radius:12px;padding:14px 12px 12px;box-shadow:var(--shadow);font-family:'Times New Roman',var(--font);font-size:13px}
+.paper .co{text-align:center;font-size:18px;font-weight:700}
+.paper .ttl{text-align:center;font-weight:700;letter-spacing:.12em;background:#e2e2e2;border-top:1px solid #111;border-bottom:1px solid #111;margin:8px 0;padding:4px}
+.paper .meta{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:8px}
+.paper .meta div:last-child{text-align:right}
+.ptable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th,.ptable td{border:1px solid #444;padding:5px 3px;text-align:center;vertical-align:middle}
+.ptable th{background:#e2e2e2}
+.ptable td.nm{text-align:left;padding-left:5px}
+.ptable tfoot td{font-weight:700;background:#f2f2f2}
+.pv-warn{font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:10px;padding:8px 10px;margin-top:10px}
+
+/* Save-এর পরে */
+.donehero{text-align:center;border-radius:20px;padding:20px 16px 18px;margin-bottom:12px;color:#fff;background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.18),transparent 55%),linear-gradient(140deg,#2f9e44,#0c8599);box-shadow:var(--shadow)}
+.donehero.ret{background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.18),transparent 55%),linear-gradient(140deg,#f08c00,#d9480f)}
+.ok-mark{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;margin:0 auto 10px}
+.ok-mark svg{width:28px;height:28px}
+.dh-title{font-size:13px;font-weight:600;opacity:.9}
+.dh-no{font-size:20px;font-weight:700;letter-spacing:.02em;margin:2px 0 6px}
+.dh-amt{font-size:15px;font-weight:600;opacity:.95}
+.donebtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dbtn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;border-radius:14px;font-weight:700;font-size:14.5px;text-decoration:none}
+.dbtn svg{width:18px;height:18px;flex:none}
+.dbtn.pdf{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff}
+.dbtn.dl{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);border:1px solid var(--line)}
+.dbtn.wa{grid-column:1/-1;background:linear-gradient(135deg,#25d366,#1fa855);color:#fff}
+.nextbtns{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.nbtn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;border-top:1px solid var(--line)}
+.nbtn:first-child{border-top:0}
+.nbtn b{display:block;font-size:14.5px}
+.nbtn small{font-size:12px;color:var(--ink-3)}
+
+/* নিজের বানানো সাম্প্রতিক invoice */
+.invcard{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;border-left:4px solid #4c6ef5}
+.invcard.ret{border-left-color:var(--warn)}
+.invtop{display:flex;align-items:center;gap:11px}
+.invno{display:inline-block;font-size:11.5px;color:var(--ink-2);background:var(--chip);padding:1px 8px;border-radius:7px;margin-top:3px}
+.amt{font-weight:700;font-size:16px;text-align:right;white-space:nowrap}
+.invbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}
+.ibtn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:10px;background:var(--chip);color:var(--ink);text-decoration:none}
+.ibtn svg{width:14px;height:14px}
+.ibtn.wa{background:rgba(31,168,85,.14);color:#1fa855}
+
+.skel{height:56px;border-radius:14px;margin-bottom:8px;background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;bottom:calc(100px + var(--safe-b));transform:translate(-50%,20px);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:60;opacity:0;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hint{font-size:12px;color:var(--ink-3);text-align:center;margin:18px 8px 6px}
+
+/* ── নকশা: পরিষ্কার, পেশাদার (উপরের নিয়মগুলোর উপর) ── */
+body{background:radial-gradient(1200px 420px at 50% -220px,rgba(176,141,87,.12),transparent 70%),var(--bg)}
+.top{padding:14px 0 18px;box-shadow:0 6px 24px rgba(10,18,40,.18)}
+main.wrap{padding-top:16px} /* .wrap-এর padding উপরের ফাঁক মুছে দিচ্ছিল — নোটিশ header-এর গায়ে লেগে থাকত */
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;font-family:var(--num);font-weight:800;font-size:15px;letter-spacing:.02em;color:#14213d;background:linear-gradient(140deg,#f6e7c8,#d4b483);box-shadow:0 4px 14px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.6)}
+.title{font-size:19px;letter-spacing:.01em}
+.hbtn{border:1px solid rgba(255,255,255,.2)}
+.card,.list,.line,.invcard,.nextbtns{border:1px solid var(--line)}
+.search{border:1.5px solid var(--line)}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(176,141,87,.15)}
+.item{transition:background .15s}
+.item:hover{background:var(--surface-2)}
+.label{color:var(--ink-2);letter-spacing:.01em}
+
+/* PIN পাতা */
+.login{padding:28px 22px 22px;margin-top:48px;border-top:4px solid var(--accent)}
+.login .lock{width:64px;height:64px;border-radius:20px;background:linear-gradient(140deg,#23365f,#14213d);box-shadow:0 10px 24px rgba(20,33,61,.35)}
+.login input{background:var(--surface-2);font-size:26px;letter-spacing:.6em;padding:14px 14px 14px calc(14px + .6em)}
+
+/* অফিসের নির্দেশনা — চোখে পড়ার মতো */
+.notice{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;margin:0 0 14px;border-radius:16px;background:linear-gradient(135deg,#fff4df,#ffe6bd);border:1px solid #f1c27d;border-left:5px solid #e8590c;color:#7a3300;box-shadow:0 6px 18px rgba(232,89,12,.12)}
+.notice .ni{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:#e8590c;color:#fff;box-shadow:0 4px 10px rgba(232,89,12,.35)}
+.notice .ni svg{width:18px;height:18px}
+.notice b{display:block;font-size:14.5px;line-height:1.55;font-weight:700}
+.nwa{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 13px;border-radius:999px;background:#1fa855;color:#fff;font-weight:700;font-size:13px;text-decoration:none;font-family:var(--num);box-shadow:0 4px 12px rgba(31,168,85,.3)}
+.nwa svg{width:15px;height:15px}
+@media (prefers-color-scheme:dark){
+  .notice{background:linear-gradient(135deg,#3a2410,#2a1a0b);border-color:#6b3d14;color:#ffd8a8}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="brand">
+      <div class="mark">TP</div>
+      <div style="min-width:0">
+        <div class="eyebrow" id="company">Technique Publication</div>
+        <div class="title" id="title"> Retailer Invoice</div>
+      </div>
+    </div>
+    <div class="who" id="who" hidden><span id="whoName"></span><button class="hbtn" id="logout">Log Out</button></div>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</main>
+
+<footer class="dock" id="dock" hidden>
+  <div class="wrap">
+    <div class="sum"><b id="dockTotal">৳0</b><span id="dockNote">০টি বই</span></div>
+    <button class="save" id="saveBtn">Save</button>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<div class="pv" id="pv" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+    <div class="pv-head"><span id="pvTitle">Invoice দেখে নিন</span><button class="pv-x" id="pvX" aria-label="বন্ধ">×</button></div>
+    <div class="pv-body" id="pvBody"></div>
+    <div class="pv-foot">
+      <button class="pv-edit" id="pvEdit">✏️ বদলান</button>
+      <button class="pv-ok" id="pvOk">✓ ঠিক আছে, Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener("error", function (e) {
+  var t = document.getElementById("title");
+  if (t) t.textContent = "সমস্যা: " + (e.message || "অজানা") + (e.lineno ? " (line " + e.lineno + ")" : "");
+});
+</script>
+<script>
+/* লেখার ভেতরে দুইটা / পরপর রাখা যাবে না — Google-এর সার্ভার বাকি লাইনকে comment ভেবে কেটে দেয় */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const NF = new Intl.NumberFormat("en-IN");
+const tk = n => (n < 0 ? "-" : "") + "৳" + NF.format(Math.round(Math.abs(n || 0)));
+const pad = n => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; };
+const bnNum = s => Number(String(s ?? "").replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/[^\d.\-]/g, ""));
+const initials = n => n.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2800);
+}
+const hasServer = () => window.google && google.script && google.script.run;
+const ICON = {
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+  pdf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3 21l2-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>'
+};
+// অফিসের নির্দেশনা — বই দেওয়ার আগে জানাতে হয়; নম্বরে চাপলে সরাসরি WhatsApp খোলে
+const NOTICE = () => `<div class="notice"><span class="ni">${ICON.bell}</span>
+  <div><b>অনুগ্রহপূর্বক আশরাফুল স্যারকে ইনভয়েসের বিষয়ে অবগত করুন এরপর বই দিন।</b>
+  <a class="nwa" href="https:\/\/wa.me/8801303292400" target="_blank">${ICON.wa}Whatsapp: 01303292400</a></div></div>`;
+const AV_COLORS = [["#4263eb", "#3b5bdb"], ["#0c8599", "#0b7285"], ["#2f9e44", "#2b8a3e"], ["#e8590c", "#d9480f"],
+                   ["#ae3ec9", "#9c36b5"], ["#d6336c", "#c2255c"], ["#7048e8", "#6741d9"], ["#1c7ed6", "#1971c2"]];
+function avStyle(name) {
+  let h = 0;
+  for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [a, b] = AV_COLORS[h % AV_COLORS.length];
+  return `background:linear-gradient(140deg,${a},${b})`;
+}
+
+/* ═══════════ State ═══════════ */
+let D = null;
+let PIN = store.get("staff-pin") || "";
+const A = { step: "shop", r: -1, mode: "Invoice", items: [], q: "", rq: "", saving: false, result: null };
+const isReturn = () => A.mode !== "Invoice";
+const pFind = p => (p.name + " " + p.code + " " + p.kw).toLowerCase();
+const pHas = (p, q) => { const h = pFind(p); return String(q || "").toLowerCase().split(/\s+/).every(w => !w || h.includes(w)); };
+const pRank = (p, q) => {
+  const n = String(p.name).toLowerCase(), s = String(q || "").trim().toLowerCase();
+  return n.indexOf(s) === 0 ? 3 : n.includes(s) ? 2 : pFind(p).includes(s) ? 1 : 0;
+};
+
+// অসমাপ্ত invoice ফোনেই রেখে দিই — পাতা বন্ধ হয়ে গেলেও হারায় না
+function saveDraft() {
+  if (A.step !== "items" || A.r < 0) return store.set("staff-draft", null);
+  store.set("staff-draft", { shop: D.retailers[A.r].name, mode: A.mode,
+    items: A.items.map(it => ({ p: D.products[it.p].name, qty: it.qty, neg: it.neg })) });
+}
+function restoreDraft() {
+  const d = store.get("staff-draft");
+  if (!d || !d.items || !d.items.length) return false;
+  const r = D.retailers.findIndex(x => x.name === d.shop);
+  if (r < 0) return false;
+  const items = d.items.map(x => ({ ...x, p: D.products.findIndex(p => p.name === x.p) })).filter(x => x.p >= 0);
+  Object.assign(A, { step: "items", r, mode: d.mode || "Invoice", items });
+  return true;
+}
+
+/* ═══════════ PIN ও ডাটা ═══════════ */
+function renderLogin(msg) {
+  D = null;
+  $("#who").hidden = true; $("#dock").hidden = true;
+  $("#title").textContent = "Retailer Invoice";
+  $("#app").innerHTML = `
+    <div class="card login">
+      <div class="lock">${ICON.lock}</div>
+      <div style="font-weight:700;font-size:17px">Please Enter Your PIN</div>
+      <div class="t2">PIN না জানলে কর্তৃপক্ষকে অবগত করুন</div>
+      <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
+      <div class="err" id="pinErr">${esc(msg || "")}</div>
+      <button class="save" id="pinGo" style="width:100%">LOG IN</button>
+    </div>`;
+  setTimeout(() => { const p = $("#pin"); if (p) p.focus(); }, 100);
+}
+function load(pin) {
+  const go = $("#pinGo");
+  if (go) { go.disabled = true; go.textContent = "Logging In…"; }
+  const fail = err => {
+    const m = String(err && err.message || err);
+    if (/PIN|অনেকবার/.test(m)) { store.del("staff-pin"); PIN = ""; renderLogin(m); return; }
+    if (go) { renderLogin(m); return; }
+    $("#app").innerHTML = `<div class="card empty">ডাটা আনা যায়নি<br><small>${esc(m)}</small><br><br>
+      <button class="save" onclick="location.reload()" style="padding:10px 18px;font-size:14px">আবার চেষ্টা</button></div>`;
+  };
+  const ok = json => {
+    D = typeof json === "string" ? JSON.parse(json) : json;
+    D.products.forEach(p => { p.code = p.code || ""; p.kw = p.kw || ""; });
+    PIN = pin; store.set("staff-pin", pin);
+    $("#company").textContent = D.company || "Invoice";
+    $("#whoName").textContent = D.staff; $("#who").hidden = false;
+    if (restoreDraft()) toast("আগের অসমাপ্ত invoice ফিরিয়ে আনা হয়েছে");
+    render();
+  };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getStaffData(pin);
+  else setTimeout(() => ok(demoData()), 300);
+}
+
+/* ═══════════ Render ═══════════ */
+function render() {
+  $("#title").textContent = A.step === "done" ? "Invoice সেভ হয়েছে" : (isReturn() && A.step === "items" ? "ফেরত / বদল" : "নতুন Invoice");
+  $("#dock").hidden = A.step !== "items";
+  if (A.step === "shop") renderShop();
+  else if (A.step === "items") renderItems();
+  else renderDone();
+  saveDraft();
+}
+
+function shopListHtml() {
+  const q = A.rq.trim().toLowerCase();
+  const list = D.retailers.map((r, i) => ({ ...r, i })).filter(r => !q || r.name.toLowerCase().includes(q) || (r.phone || "").includes(q));
+  return list.length ? list.map(r => `
+    <button class="item" data-shop="${r.i}">
+      <div class="av" style="${avStyle(r.name)}">${esc(initials(r.name))}</div>
+      <div class="grow"><div class="t1">${esc(r.name)}</div>
+        ${r.phone ? `<div class="t2 phone">${ICON.phone}<span class="num">${esc(r.phone)}</span></div>` : ""}</div>
+      <span class="chev">${ICON.chev}</span>
+    </button>`).join("") : `<div class="empty">কেউ পাওয়া যায়নি</div>`;
+}
+function invCard(h) {
+  const ret = /^RET-/.test(h.no) || Number(h.total) < 0;
+  const links = h.dl ? `<a class="ibtn" href="${esc(h.dl)}" target="_blank">${ICON.dl}Download</a>` : ""; // staff শুধু Download
+  return `<div class="invcard${ret ? " ret" : ""}">
+    <div class="invtop">
+      <div class="av sm" style="${avStyle(h.retailer)}">${esc(initials(h.retailer))}</div>
+      <div class="grow"><div class="t1">${esc(h.retailer)}</div><div class="invno num">${esc(h.no)}</div></div>
+      <div class="amt num">${tk(h.total)}</div>
+    </div>
+    ${links ? `<div class="invbtns">${links}</div>` : ""}
+  </div>`;
+}
+function renderShop() {
+  const recent = (store.get("staff-shops") || []).map(n => D.retailers.findIndex(r => r.name === n)).filter(i => i >= 0).slice(0, 6);
+  $("#app").innerHTML = `
+    ${NOTICE()}
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="rq" placeholder="Retailer খুঁজুন — নাম বা ফোন" value="${esc(A.rq)}" autocomplete="off"></label>
+    ${recent.length ? `<div class="label">সম্প্রতি</div><div class="chips">${recent.map(i =>
+      `<button class="chip" data-shop="${i}"><i style="${avStyle(D.retailers[i].name)}"></i>${esc(D.retailers[i].name)}</button>`).join("")}</div>` : ""}
+    <div class="label">Retailer Select করুন <span class="count num">${D.retailers.length}</span></div>
+    <div class="list" id="shopList">${shopListHtml()}</div>
+    ${(D.mine || []).length ? `<div class="label">আপনার বানানো সাম্প্রতিক Invoice</div>${D.mine.map(invCard).join("")}` : ""}`;
+}
+
+function lineTotal(it) {
+  const p = D.products[it.p];
+  const q = (bnNum(it.qty) || 0) * (it.neg ? -1 : 1);
+  return (p.mrp || 0) * (1 - (D.discounts[A.r][it.p] || 0)) * q;
+}
+const discPct = it => Math.round((D.discounts[A.r][it.p] || 0) * 1000) / 10;
+function itemsHtml() {
+  if (!A.items.length) return `<div class="emptybox">${ICON.book}<div>এখনো কোনো বই নেই<br><small>নিচে খুঁজে যোগ করুন — বাংলা নাম, Code বা Keyword</small></div></div>`;
+  return A.items.map((it, k) => {
+    const p = D.products[it.p];
+    return `<div class="line${it.neg ? " neg" : ""}">
+      <div class="nm"><span class="sl num">${k + 1}</span><span class="grow">${esc(p.name)}${p.code ? `<span class="code">${esc(p.code)}</span>` : ""} ${p.type === "Combo" ? `<span class="pill">Combo</span>` : ""}</span>
+        <button class="rm" data-rm="${k}" aria-label="সরান">${ICON.x}</button></div>
+      <div class="ctl">
+        <div class="stepper"><button data-dec="${k}" aria-label="কম">−</button>
+          <input data-qty="${k}" inputmode="numeric" value="${esc(it.qty)}" placeholder="0"><button data-inc="${k}" aria-label="বেশি">+</button></div>
+        <div class="disc">${isReturn() ? `<button class="sign ${it.neg ? "" : "plus"}" data-sign="${k}">${it.neg ? "ফেরত" : "নতুন"}</button>` : ""}
+          ছাড় <b>${discPct(it)}%</b></div>
+        <div class="lt"><span id="lt-${k}">${tk(lineTotal(it))}</span><small>MRP ${tk(p.mrp)}</small></div>
+      </div></div>`;
+  }).join("");
+}
+function resultsHtml() {
+  const q = A.q.trim().toLowerCase();
+  const added = new Set(A.items.map(it => it.p));
+  const use = store.get("staff-use") || {};
+  let list = D.products.map((p, i) => ({ ...p, i })).filter(p => !added.has(p.i) && pHas(p, q));
+  if (!q) list.sort((a, b) => (use[b.name] || 0) - (use[a.name] || 0));
+  else list = list.map((p, k) => [pRank(p, q), k, p]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).map(x => x[2]);
+  list = list.slice(0, q ? 40 : 12);
+  return list.length ? list.map(p => `
+    <button class="item" data-add="${p.i}">
+      <div class="grow"><div class="t1 wrapline">${esc(p.name)}${p.code ? `<span class="code">${esc(p.code)}</span>` : ""}${p.type === "Combo" ? ` <span class="pill">Combo</span>` : ""}</div>
+        ${p.kw ? `<div class="t2">${esc(p.kw)}</div>` : ""}</div>
+      <div class="mrp num">${tk(p.mrp)}</div><span class="addbtn">＋</span>
+    </button>`).join("") : `<div class="empty">কিছু পাওয়া যায়নি — বইটা তালিকায় না থাকলে অফিসে জানান</div>`;
+}
+function renderItems() {
+  const r = D.retailers[A.r];
+  $("#app").innerHTML = `
+    <div class="card shopcard${isReturn() ? " ret" : ""}">
+      <div class="shop"><div class="av" style="${avStyle(r.name)}">${esc(initials(r.name))}</div>
+        <div class="grow"><div class="t1">${esc(r.name)}</div>
+          ${r.phone ? `<div class="t2 phone">${ICON.phone}<span class="num">${esc(r.phone)}</span></div>` : ""}</div>
+        <button class="change" id="changeShop">বদলান</button></div>
+      <div class="today"><span class="d">তারিখ: <b class="num">${today()}</b></span>
+        <div class="seg">${[["Invoice", "Invoice"], ["Return / Exchange", "ফেরত/বদল"]].map(([k, l]) =>
+          `<button data-mode="${k}" class="${A.mode === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
+    </div>
+    <div class="label">বই <span class="count num" id="itemCount"${A.items.length ? "" : " hidden"}>${A.items.length}</span></div>
+    <div id="items">${itemsHtml()}</div>
+    <label class="search" style="margin-top:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" placeholder="বই খুঁজুন — নাম, Code বা Keyword" value="${esc(A.q)}" autocomplete="off"></label>
+    <div class="label" id="resLabel">${A.q ? "খোঁজার ফল" : "বেশি ব্যবহৃত"}</div>
+    <div class="list" id="results">${resultsHtml()}</div>`;
+  updateDock();
+}
+function updateDock() {
+  const total = A.items.reduce((a, it) => a + lineTotal(it), 0);
+  const qty = A.items.reduce((a, it) => a + (bnNum(it.qty) || 0) * (it.neg ? -1 : 1), 0);
+  $("#dockTotal").textContent = tk(total);
+  $("#dockNote").textContent = `${A.items.length}টি বই · ${NF.format(qty)} কপি`;
+  $("#saveBtn").disabled = A.saving;
+  $("#saveBtn").textContent = A.saving ? "Save হচ্ছে…" : "Save";
+}
+function refreshItems(full) {
+  if (full) {
+    $("#items").innerHTML = itemsHtml(); $("#results").innerHTML = resultsHtml();
+    const c = $("#itemCount"); if (c) { c.textContent = A.items.length; c.hidden = !A.items.length; }
+  }
+  else A.items.forEach((it, k) => { const el = $("#lt-" + k); if (el) el.textContent = tk(lineTotal(it)); });
+  updateDock();
+  saveDraft();
+}
+
+function renderDone() {
+  const r = A.result;
+  const ret = r.total < 0;
+  $("#app").innerHTML = `
+    <div class="donehero${ret ? " ret" : ""}">
+      <div class="ok-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div class="dh-title">${ret ? "ফেরত Save হয়েছে" : "Invoice Save হয়েছে"}</div>
+      <div class="dh-no num">${esc(r.invoiceNo)}</div>
+      <div class="dh-amt">${esc(r.retailer)} · <span class="num">${tk(r.total)}</span></div>
+    </div>
+    ${NOTICE()}
+    <div class="label">Invoice</div>
+    <div class="donebtns">
+      ${r.download ? `<a class="dbtn pdf" style="grid-column:1/-1" href="${esc(r.download)}" target="_blank">${ICON.dl}<span>Download</span></a>`
+                   : `<div class="card empty" style="grid-column:1/-1">PDF হয়নি — অফিসে জানান</div>`}
+    </div>
+    <div class="label">এরপর</div>
+    <div class="nextbtns">
+      <button class="nbtn" id="againSame"><span class="av sm" style="${avStyle(r.retailer)}">${ICON.plus}</span>
+        <div class="grow"><b>আরেকটা Invoice</b><small>${esc(r.retailer)}-এর জন্যই</small></div><span class="chev">${ICON.chev}</span></button>
+      <button class="nbtn" id="againNew"><span class="av sm" style="background:linear-gradient(140deg,#495057,#343a40)">${ICON.shop}</span>
+        <div class="grow"><b>অন্য retailer</b><small>retailer তালিকায় ফিরে যান</small></div><span class="chev">${ICON.chev}</span></button>
+    </div>`;
+}
+
+/* ═══════════ Save — আগে preview, "ঠিক আছে" চাপলে তবেই ═══════════ */
+function submit() {
+  if (A.saving) return;
+  const items = A.items.filter(it => bnNum(it.qty));
+  if (!items.length) return toast("অন্তত একটা বইয়ের Qty দিন");
+  showPreview(items);
+}
+function showPreview(items) {
+  const r = D.retailers[A.r];
+  const lines = items.map(it => {
+    const p = D.products[it.p];
+    return { name: p.name, qty: (bnNum(it.qty) || 0) * (it.neg ? -1 : 1), mrp: p.mrp || 0, disc: discPct(it), total: lineTotal(it) };
+  });
+  const total = lines.reduce((a, l) => a + l.total, 0);
+  const qty = lines.reduce((a, l) => a + l.qty, 0);
+  const money = n => NF.format(Math.round(n * 100) / 100);
+  const skipped = A.items.length - items.length;
+  $("#pvBody").innerHTML = `
+    <div class="paper">
+      <div class="co">${esc(D.company || "")}</div>
+      <div class="ttl">${isReturn() || total < 0 ? "RETURN / EXCHANGE" : "INVOICE"}</div>
+      <div class="meta">
+        <div><b>Date:</b> ${today()}<br><b>Name:</b> ${esc(r.name)}</div>
+        <div><b>Invoice No:</b> Save-এর সময়<br><b>Phone:</b> ${esc(r.phone || "")}</div>
+      </div>
+      <table class="ptable">
+        <thead><tr><th>SL</th><th>Product</th><th>Qty</th><th>MRP</th><th>ছাড়</th><th>Total</th></tr></thead>
+        <tbody>${lines.map((l, i) => `<tr><td class="num">${i + 1}</td><td class="nm">${esc(l.name)}</td>
+          <td class="num">${NF.format(l.qty)}</td><td class="num">${money(l.mrp)}</td>
+          <td class="num">${l.disc}%</td><td class="num">${money(l.total)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right">মোট</td><td class="num">${NF.format(qty)}</td>
+          <td colspan="2"></td><td class="num">${money(total)}</td></tr></tfoot>
+      </table>
+    </div>
+    ${skipped ? `<div class="pv-warn">Qty না দেওয়া ${skipped}টা বই এই invoice-এ যাবে না।</div>` : ""}`;
+  const ok = $("#pvOk"); ok.disabled = false; ok.textContent = "✓ ঠিক আছে, Save";
+  $("#pv").hidden = false;
+  $("#pvBody").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+function closePreview() {
+  if (A.saving) return;
+  $("#pv").hidden = true;
+  document.body.style.overflow = "";
+}
+function save(items) {
+  if (A.saving) return;
+  const r = D.retailers[A.r];
+  // discount পাঠাই না — সার্ভার retailer-এর জন্য ঠিক করা discount নিজে বসায়; তারিখও সার্ভারে আজকের
+  const p = { retailer: r.name, mode: A.mode,
+    items: items.map(it => ({ product: D.products[it.p].name, qty: (bnNum(it.qty) || 0) * (it.neg ? -1 : 1) })) };
+  A.saving = true; updateDock();
+  const okBtn = $("#pvOk"); okBtn.disabled = true; okBtn.textContent = "Save হচ্ছে…";
+  const fail = err => {
+    A.saving = false; updateDock();
+    okBtn.disabled = false; okBtn.textContent = "✓ ঠিক আছে, Save";
+    const m = String(err && err.message || err);
+    if (/PIN|অনেকবার/.test(m)) { closePreview(); store.del("staff-pin"); PIN = ""; renderLogin(m); return; }
+    toast("❌ " + m);
+  };
+  const ok = json => {
+    const res = typeof json === "string" ? JSON.parse(json) : json;
+    if (res.problems) { fail(res.problems.join(" · ")); return; }
+    A.saving = false;
+    A.result = res.result;
+    const shops = (store.get("staff-shops") || []).filter(n => n !== r.name); shops.unshift(r.name); store.set("staff-shops", shops.slice(0, 10));
+    const use = store.get("staff-use") || {}; p.items.forEach(x => { use[x.product] = (use[x.product] || 0) + 1; }); store.set("staff-use", use);
+    D.mine = [{ retailer: r.name, no: res.result.invoiceNo, total: res.result.total,
+      dl: res.result.download || "" }].concat(D.mine || []).slice(0, 10);
+    A.items = []; A.q = ""; A.step = "done";
+    closePreview();
+    render();
+    window.scrollTo({ top: 0 });
+  };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).staffCreateInvoice(PIN, p);
+  else setTimeout(() => ok({ result: { invoiceNo: "INV-DEMO", retailer: r.name,
+    total: items.reduce((a, it) => a + lineTotal(it), 0), download: "#", masterOk: true } }), 600);
+}
+
+/* ═══════════ Events ═══════════ */
+function pickShop(i) {
+  A.r = i; A.step = "items"; A.rq = "";
+  render();
+  window.scrollTo({ top: 0 });
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "pv") { closePreview(); return; }
+  const b = e.target.closest("[data-shop],[data-add],[data-rm],[data-inc],[data-dec],[data-sign],[data-mode],#changeShop,#saveBtn,#againSame,#againNew,#pvOk,#pvEdit,#pvX,#pinGo,#logout");
+  if (!b) return;
+  const d = b.dataset;
+  if (b.id === "pinGo") {
+    const v = String($("#pin").value || "").replace(/[০-৯]/g, c => "০১২৩৪৫৬৭৮৯".indexOf(c)).trim();
+    if (!/^[0-9]{4}$/.test(v)) { $("#pinErr").textContent = "৪ অঙ্কের PIN দিন"; return; }
+    load(v);
+  }
+  else if (b.id === "logout") {
+    if (A.items.length && A.step === "items" && !confirm("লেখা invoice মুছে বের হবেন?")) return;
+    store.del("staff-pin"); store.set("staff-draft", null); PIN = "";
+    Object.assign(A, { step: "shop", r: -1, mode: "Invoice", items: [], q: "", rq: "" });
+    renderLogin("");
+  }
+  else if (b.id === "pvOk") save(A.items.filter(it => bnNum(it.qty)));
+  else if (b.id === "pvEdit" || b.id === "pvX") closePreview();
+  else if (d.shop !== undefined) pickShop(+d.shop);
+  else if (d.add !== undefined) {
+    const k = +d.add;
+    A.items.push({ p: k, qty: "", neg: isReturn() });
+    A.q = ""; $("#q").value = ""; $("#resLabel").textContent = "বেশি ব্যবহৃত";
+    refreshItems(true);
+    const q = document.querySelector(`[data-qty="${A.items.length - 1}"]`); if (q) q.focus();
+  }
+  else if (d.rm !== undefined) { A.items.splice(+d.rm, 1); refreshItems(true); }
+  else if (d.inc !== undefined || d.dec !== undefined) {
+    const k = +(d.inc !== undefined ? d.inc : d.dec);
+    const v = Math.max(0, (bnNum(A.items[k].qty) || 0) + (d.inc !== undefined ? 1 : -1));
+    A.items[k].qty = v ? String(v) : "";
+    const el = document.querySelector(`[data-qty="${k}"]`); if (el) el.value = A.items[k].qty;
+    refreshItems(false);
+  }
+  else if (d.sign !== undefined) { const it = A.items[+d.sign]; it.neg = !it.neg; refreshItems(true); }
+  else if (d.mode) { A.mode = d.mode; A.items.forEach(it => { it.neg = isReturn(); }); render(); }
+  else if (b.id === "changeShop") { A.step = "shop"; render(); }
+  else if (b.id === "saveBtn") submit();
+  else if (b.id === "againSame") { A.step = "items"; A.mode = "Invoice"; render(); }
+  else if (b.id === "againNew") { A.step = "shop"; A.r = -1; A.mode = "Invoice"; render(); }
+});
+// খোঁজার সময় শুধু তালিকা বদলাই — ঘরটা নতুন করে আঁকলে বাংলা টাইপ (Avro/Gboard) ভেঙে যায়
+document.addEventListener("input", e => {
+  const t = e.target, d = t.dataset;
+  // ৪ অঙ্ক লেখা হলেই নিজে থেকে ঢোকে — আলাদা করে বোতাম চাপতে হয় না
+  if (t.id === "pin") {
+    const v = t.value.replace(/[০-৯]/g, c => "০১২৩৪৫৬৭৮৯".indexOf(c)).replace(/[^0-9]/g, "").slice(0, 4);
+    if (v !== t.value) t.value = v;
+    if (v.length === 4) { const g = $("#pinGo"); if (g && !g.disabled) g.click(); }
+    return;
+  }
+  if (t.id === "rq") { A.rq = t.value; $("#shopList").innerHTML = shopListHtml(); return; }
+  if (t.id === "q") { A.q = t.value; $("#results").innerHTML = resultsHtml(); $("#resLabel").textContent = A.q ? "খোঁজার ফল" : "বেশি ব্যবহৃত"; return; }
+  if (d.qty !== undefined) { A.items[+d.qty].qty = t.value; refreshItems(false); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#pv").hidden) { closePreview(); return; }
+  if (e.key !== "Enter") return;
+  if (e.target.id === "pin") { const g = $("#pinGo"); if (g) g.click(); }
+  if (e.target.id === "q") { const one = document.querySelectorAll("#results [data-add]"); if (one.length === 1) one[0].click(); }
+  if (e.target.id === "rq") { const one = document.querySelectorAll("#shopList [data-shop]"); if (one.length === 1) one[0].click(); }
+});
+
+/* ═══════════ Demo (Apps Script-এর বাইরে খুললে) ═══════════ */
+function demoData() {
+  const products = [["ইজি বাংলা ১ম পত্র", 550, "EB-1", "bangla 1st"], ["ইজি ইংলিশ ১ম পত্র", 795, "EE-1", "english 1st"],
+    ["ইজি ফিজিক্স (৯ম-১০ম শ্রেণিঃ এসএসসি ২৭ ও ২৮)", 830, "EP-01", "easy physics"], ["৯ম সাইন্স কম্বো (সকল বিষয়)", 9275, "C9S", "science combo"]]
+    .map(([name, mrp, code, kw], i) => ({ name, mrp, code, kw, type: i === 3 ? "Combo" : "Normal" }));
+  const retailers = [["Ejanani", "01700000000"], ["Boighor Library", ""], ["Alo Book House", "01800000000"]]
+    .map(([name, phone]) => ({ name, phone }));
+  return { company: "Demo · Technique Publication", staff: "Demo Staff", retailers, products,
+    discounts: retailers.map(() => products.map(p => p.type === "Combo" ? 0.4 : 0.3)), mine: [] };
+}
+
+if (PIN) load(PIN); else renderLogin("");
+</script>
+</body>
+</html>

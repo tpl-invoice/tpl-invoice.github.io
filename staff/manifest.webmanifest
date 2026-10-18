@@ -1,0 +1,19 @@
+{
+  "id": "/staff/",
+  "name": "Retailer Invoice · Staff — Technique Publication",
+  "short_name": "Invoice Staff",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14122b",
+  "theme_color": "#1e3a8a",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "../icon-staff.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
