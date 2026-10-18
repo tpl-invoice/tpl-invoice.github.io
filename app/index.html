@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<script>
+/* GitHub সাইট — google.script.run-এর বদলে fetch → Apps Script (WebApi.js doPost)। পাতার কোড অপরিবর্তিত। */
+var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT1mM9yNMipNPuSu6vDL-1RLZ2k12W9p9KJYvi_DRFuA/exec';
+(function(){
+  function call(fn,args){
+    return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args})})
+      .then(function(r){if(!r.ok)throw new Error('সার্ভার সাড়া দিচ্ছে না ('+r.status+') — একটু পরে আবার চেষ্টা করুন।');
+        return r.json().catch(function(){throw new Error('সার্ভারের উত্তর বোঝা যায়নি।');});},
+        function(){throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');})
+      .then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'অজানা সমস্যা।');return j.data;});
+  }
+  function builder(){
+    var ok=null,fail=null,b=new Proxy({},{get:function(_,k){
+      if(k==='withSuccessHandler')return function(f){ok=f;return b;};
+      if(k==='withFailureHandler')return function(f){fail=f;return b;};
+      if(k==='withUserObject')return function(){return b;};
+      return function(){call(k,[].slice.call(arguments)).then(function(d){if(ok)ok(d);},function(e){if(fail)fail(e);else console.error(e);});};
+    }});
+    return b;
+  }
+  window.google={script:{run:new Proxy({},{get:function(_,k){return builder()[k];}})}};
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retailer Invoice · Invoice</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" type="image/png" href="../icon-dashboard.png">
+<link rel="apple-touch-icon" href="../icon-dashboard.png">
+
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- font পেছনে লোড হয় — এর জন্য পাতা দেখাতে দেরি হয় না -->
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+:root{
+  --bg:#f4f1ea; --surface:#ffffff; --surface-2:#faf8f3; --ink:#15171c; --ink-2:#555b69; --ink-3:#8b909c;
+  --line:#e6e1d6; --chip:#ece7dc; --brand:#14213d; --brand-2:#23365f; --accent:#b08d57; --accent-soft:#f3ead9;
+  --pos:#1e8a5a; --pos-soft:#e3f3ea; --neg:#c0392b; --neg-soft:#fbe7e4; --warn:#b86e12; --warn-soft:#fdf0dc;
+  --shadow:0 1px 2px rgba(20,22,30,.04),0 8px 28px rgba(20,22,30,.07);
+  --font:'Hind Siliguri','Inter',system-ui,sans-serif; --num:'Inter','Hind Siliguri',system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1014; --surface:#171a21; --surface-2:#1c2028; --ink:#eef0f4; --ink-2:#a9afbd; --ink-3:#717887;
+    --line:#262b35; --chip:#232834; --brand:#0b1226; --brand-2:#1b2a4f; --accent:#d4b483; --accent-soft:#2b2518;
+    --pos:#4cc38a; --pos-soft:#15291f; --neg:#ef6b5b; --neg-soft:#2e1714; --warn:#e9a34a; --warn-soft:#2c2112;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
+body{padding-bottom:calc(96px + var(--safe-b))}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input{font:inherit;color:inherit}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+/* header */
+.top{background:radial-gradient(120% 160% at 100% 0%,rgba(212,180,131,.32),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(76,110,245,.28),transparent 60%),linear-gradient(160deg,var(--brand),var(--brand-2));color:#fff;padding:16px 0 20px;position:relative}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),#4c6ef5,transparent);opacity:.8}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);font-family:var(--num);font-weight:600}
+.title{font-size:21px;font-weight:700;margin:1px 0 0}
+.hbtn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;text-decoration:none}
+.hbtn svg{width:16px;height:16px}
+
+/* blocks */
+main{padding-top:14px}
+.card{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.label{font-size:12.5px;color:var(--ink-3);font-weight:600;margin:14px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:14px;padding:0 12px;box-shadow:var(--shadow);border:1.5px solid transparent}
+.search:focus-within{border-color:var(--accent)}
+.search svg{width:18px;height:18px;color:var(--ink-3);flex:none}
+.search input{border:0;outline:0;background:none;padding:13px 0;width:100%;font-size:16px}
+.list{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left}
+.item:first-child{border-top:0}
+.item:active{background:var(--surface-2)}
+.av{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;background:linear-gradient(140deg,var(--brand-2),var(--brand))}
+.grow{flex:1;min-width:0}
+.t1{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t1.wrapline{white-space:normal}
+.t2{font-size:12.5px;color:var(--ink-3)}
+.due{font-weight:700;font-size:13.5px;color:var(--neg);white-space:nowrap}
+.due.ok{color:var(--pos)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:8px 13px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;font-weight:500}
+.empty{text-align:center;color:var(--ink-3);padding:22px 12px;font-size:13.5px}
+.code{font-size:11.5px;font-family:var(--num);color:var(--ink-3);background:var(--chip);padding:1px 6px;border-radius:6px;margin-left:4px;white-space:nowrap;display:inline-block}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+
+/* chosen retailer */
+.shop{display:flex;align-items:center;gap:12px}
+.change{font-size:13px;font-weight:600;color:var(--accent);padding:6px 4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.row2 input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);font-size:15px;outline:none}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px}
+.seg button{flex:1;padding:8px 6px;border-radius:9px;font-size:13px;color:var(--ink-2);font-weight:600}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* invoice lines */
+.line{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:11px 12px;margin-bottom:8px}
+.line .nm{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;font-weight:600;font-size:14px}
+.rm{color:var(--neg);font-size:22px;line-height:1;padding:0 4px;flex:none}
+.ctl{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:8px}
+.stepper{display:flex;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stepper button{width:40px;height:42px;font-size:20px;font-weight:600;color:var(--ink-2)}
+.stepper input{width:58px;text-align:center;border:0;background:none;font-size:17px;font-weight:700;outline:none;font-family:var(--num);padding:0}
+.disc{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-3)}
+.disc input{width:52px;padding:9px 6px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);text-align:center;font-size:14px;outline:none;font-family:var(--num)}
+.lt{text-align:right;font-weight:700;font-family:var(--num);font-size:15px}
+.lt small{display:block;font-size:11px;color:var(--ink-3);font-weight:500}
+.sign{font-size:12px;font-weight:700;padding:5px 9px;border-radius:9px;background:var(--neg-soft);color:var(--neg)}
+.sign.plus{background:var(--pos-soft);color:var(--pos)}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:10px 0 calc(10px + var(--safe-b))}
+.dock .wrap{display:flex;align-items:center;gap:12px}
+.dock .sum{flex:1;min-width:0}
+.dock .sum b{display:block;font-size:20px;font-family:var(--num)}
+.dock .sum span{font-size:12px;color:var(--ink-3)}
+.save{padding:14px 26px;border-radius:14px;background:var(--ink);color:var(--surface);font-weight:700;font-size:16px}
+.save[disabled]{opacity:.55;pointer-events:none}
+
+/* result */
+.ok-mark{width:56px;height:56px;border-radius:50%;background:var(--pos-soft);color:var(--pos);display:grid;place-items:center;margin:4px auto 10px}
+.ok-mark svg{width:28px;height:28px}
+.big{display:block;text-align:center;padding:15px;border-radius:14px;font-weight:700;text-decoration:none;margin-top:10px;font-size:15.5px}
+.big.pdf{background:var(--ink);color:var(--surface)}
+.big.wa{background:#1fa855;color:#fff}
+.big.ghost{background:var(--chip);color:var(--ink)}
+.sumrow{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+.sumrow.b{font-weight:700;font-size:16px;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.hint{font-size:12px;color:var(--ink-3);text-align:center;margin:18px 8px 6px}
+.skel{height:56px;border-radius:14px;margin-bottom:8px;background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;bottom:calc(100px + var(--safe-b));transform:translate(-50%,20px);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:60;opacity:0;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.big.dl{background:var(--chip);color:var(--ink);border:1.5px solid var(--ink-3)}
+
+/* Save-এর আগে preview popup — কাগজের invoice-এর মতো (dark mode-এও সাদা কাগজ) */
+.pv{position:fixed;inset:0;z-index:50;background:rgba(10,12,18,.55);display:flex;align-items:flex-end;justify-content:center}
+.pv-box{background:var(--bg);width:100%;max-width:640px;max-height:92vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:pvup .22s ease}
+@keyframes pvup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (min-width:700px){ .pv{align-items:center} .pv-box{border-radius:22px} }
+.pv-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;font-weight:700;font-size:17px;flex:none}
+.pv-x{width:34px;height:34px;border-radius:10px;background:var(--chip);font-size:20px;line-height:1}
+.pv-body{overflow-y:auto;padding:0 14px 12px;-webkit-overflow-scrolling:touch}
+.pv-foot{display:flex;gap:10px;padding:12px 14px calc(12px + var(--safe-b));border-top:1px solid var(--line);background:var(--surface);flex:none}
+.pv-foot button{flex:1;padding:14px 8px;border-radius:14px;font-weight:700;font-size:15.5px}
+.pv-edit{background:var(--chip);color:var(--ink)}
+.pv-ok{background:var(--pos);color:#fff}
+.pv-ok[disabled]{opacity:.6;pointer-events:none}
+.paper{background:#fff;color:#111;border-radius:12px;padding:14px 12px 12px;box-shadow:var(--shadow);font-family:'Times New Roman',var(--font);font-size:13px}
+.paper .co{text-align:center;font-size:18px;font-weight:700}
+.paper .ttl{text-align:center;font-weight:700;letter-spacing:.12em;background:#e2e2e2;border-top:1px solid #111;border-bottom:1px solid #111;margin:8px 0;padding:4px}
+.paper .meta{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:8px}
+.paper .meta div:last-child{text-align:right}
+.ptable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th,.ptable td{border:1px solid #444;padding:5px 3px;text-align:center;vertical-align:middle}
+.ptable th{background:#e2e2e2}
+.ptable td.nm{text-align:left;padding-left:5px}
+.ptable tfoot td{font-weight:700;background:#f2f2f2}
+.card.npbad{box-shadow:0 0 0 1.5px var(--warn),var(--shadow)}
+.pv-warn{font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:10px;padding:8px 10px;margin-top:10px}
+.pv-ok.red{background:var(--neg)}
+/* সাম্প্রতিক invoice-এ সংশোধন / বাতিল */
+.mini{font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:9px;background:var(--chip);color:var(--ink);margin:7px 6px 0 0}
+.mini.red{background:var(--neg-soft);color:var(--neg)}
+.edit-banner{background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:10px 12px;font-size:13px;margin-bottom:12px;line-height:1.5;display:flex;gap:10px;align-items:center}
+.edit-banner b{font-family:var(--num)}
+.edit-banner button{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--neg);white-space:nowrap}
+/* ── প্রথম পাতা: সারাংশ, retailer তালিকা, সাম্প্রতিক invoice ── */
+.stats{display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-bottom:12px}
+.stat{position:relative;overflow:hidden;border-radius:18px;padding:13px 14px;color:#fff;box-shadow:var(--shadow)}
+.stat::after{content:"";position:absolute;right:-28px;top:-28px;width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.12)}
+.stat span{font-size:12px;font-weight:600;opacity:.85}
+.stat b{display:block;font-size:22px;font-weight:700;margin:2px 0 1px;letter-spacing:-.01em}
+.stat small{font-size:11.5px;opacity:.8}
+.s-due{background:linear-gradient(135deg,#e03131,#c2255c 60%,#a61e4d)}
+.s-shop{background:linear-gradient(135deg,#4263eb,#1c7ed6)}
+.label.sec{font-size:13px;color:var(--ink-2);margin-top:18px;justify-content:flex-start;gap:8px}
+.label.sec::before{content:"";width:4px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--accent),#4c6ef5)}
+.label.sec .count{margin-left:auto;font-size:11.5px;padding:1px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:7px}
+.chip i{width:9px;height:9px;border-radius:50%;flex:none}
+.shopitem{transition:background .15s}
+.shopitem:hover{background:var(--surface-2)}
+.shopitem .av{box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.phone{display:flex;align-items:center;gap:5px;margin-top:2px}
+.phone svg{width:12px;height:12px;flex:none;opacity:.7}
+.duebox{text-align:right;flex:none;padding:5px 10px;border-radius:12px;background:var(--neg-soft)}
+.duebox small{display:block;font-size:10.5px;font-weight:600;color:var(--neg);opacity:.8;line-height:1.2}
+.duebox b{font-size:14px;color:var(--neg);white-space:nowrap}
+.duebox.ok{background:var(--pos-soft)}
+.duebox.ok small,.duebox.ok b{color:var(--pos)}
+.chev{width:16px;height:16px;color:var(--ink-3);flex:none;margin-left:-4px}
+.chev svg{width:16px;height:16px}
+.invcard{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;border-left:4px solid #4c6ef5}
+.invcard.ret{border-left-color:var(--warn)}
+.invtop{display:flex;align-items:center;gap:11px}
+.av.sm{width:34px;height:34px;border-radius:10px;font-size:13px}
+.invno{display:inline-block;font-size:11.5px;color:var(--ink-2);background:var(--chip);padding:1px 8px;border-radius:7px;margin-top:3px;letter-spacing:.02em}
+.amt{font-weight:700;font-size:17px;text-align:right;white-space:nowrap}
+.amt small{display:block;font-size:10.5px;font-weight:600;color:var(--warn)}
+.invbtns{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line)}
+.invbtns .sp{flex:1}
+.ibtn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:10px;background:var(--chip);color:var(--ink);text-decoration:none}
+.ibtn svg{width:14px;height:14px;flex:none}
+.ibtn.wa{background:rgba(31,168,85,.14);color:#1fa855}
+.ibtn.red{background:var(--neg-soft);color:var(--neg)}
+/* ── বইয়ের পাতা ── */
+.shopcard{border-top:4px solid #4c6ef5}
+.shopcard.ret{border-top-color:var(--warn)}
+.shopcard .av{box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.change{background:var(--accent-soft);border-radius:10px;padding:6px 12px}
+.duebar{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:9px 12px;border-radius:12px;background:var(--neg-soft);font-size:12.5px;color:var(--neg);font-weight:600}
+.duebar b{font-size:16px}
+.seg.mode button.on{background:linear-gradient(135deg,#4263eb,#1c7ed6);color:#fff}
+.shopcard.ret .seg.mode button.on{background:linear-gradient(135deg,#f08c00,#e8590c)}
+.line{border-left:4px solid #4c6ef5}
+.line.neg{border-left-color:var(--warn)}
+.line .nm{align-items:flex-start}
+.sl{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:7px;background:linear-gradient(135deg,#4263eb,#1c7ed6);color:#fff;font-size:11.5px;font-weight:700;flex:none;margin-top:1px}
+.line.neg .sl{background:linear-gradient(135deg,#f08c00,#e8590c)}
+.line .nm .grow{line-height:1.4}
+.rm{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--neg-soft);padding:0}
+.rm svg{width:14px;height:14px}
+.stepper button{color:#4263eb}
+.lt span{color:var(--ink)}
+.emptybox{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;border:1.5px dashed var(--line);color:var(--ink-2);font-size:14px;font-weight:600;margin-bottom:8px}
+.emptybox svg{width:34px;height:34px;flex:none;color:var(--accent)}
+.emptybox small{font-weight:500;color:var(--ink-3);font-size:12.5px}
+.resitem .mrp{font-weight:600;color:var(--ink-2);font-size:13.5px;white-space:nowrap}
+.addbtn{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;flex:none;background:linear-gradient(135deg,#2f9e44,#2b8a3e);color:#fff;font-size:17px;font-weight:700;line-height:1}
+.newprod{color:var(--accent);font-weight:600;background:var(--accent-soft)}
+.newprod .plus{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;flex:none}
+.dock{box-shadow:0 -6px 24px rgba(0,0,0,.08)}
+.dock .sum b{color:var(--ink)}
+.save{background:linear-gradient(135deg,#2f9e44,#1e8a5a);color:#fff;box-shadow:0 6px 18px rgba(47,158,68,.35)}
+/* বইয়ের পাতায় header আর retailer কার্ড উপরে আটকে থাকে */
+html.items{scroll-padding-top:var(--stickh,320px)}
+html.sticky .top{position:sticky;top:0;z-index:26}
+html.sticky{scroll-padding-top:var(--stickh,320px)}
+.sh-pad{height:4px}
+.stickhead .stats{margin-bottom:10px}
+.stickhead .chips{padding-bottom:6px}
+.stickhead{position:sticky;top:var(--toph,76px);z-index:20;background:var(--bg);margin:-14px -14px 0;padding:12px 14px 0}
+.stickhead .shopcard{margin-bottom:10px;box-shadow:0 10px 24px rgba(0,0,0,.14)}
+.stickhead::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;background:linear-gradient(var(--bg),transparent);pointer-events:none}
+/* ── নতুন বইয়ের পাতা ── */
+.npcard{border-left:4px solid var(--accent)}
+.nphead{display:inline-flex;align-items:center;gap:8px;color:var(--ink-2);font-size:13px}
+.npcard .sl{background:linear-gradient(135deg,var(--accent),#c08a3e)}
+#npSave{background:linear-gradient(135deg,#2f9e44,#1e8a5a);color:#fff;box-shadow:0 6px 18px rgba(47,158,68,.3)}
+#npSave[disabled]{opacity:.6}
+.big.morebtn{background:transparent;border:1.5px dashed var(--accent);color:var(--accent)}
+/* ── Save-এর পরের পাতা ── */
+.donehero{text-align:center;border-radius:20px;padding:20px 16px 18px;margin-bottom:12px;color:#fff;position:relative;overflow:hidden;
+  background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.18),transparent 55%),linear-gradient(140deg,#2f9e44,#0c8599);box-shadow:var(--shadow)}
+.donehero.ret{background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.18),transparent 55%),linear-gradient(140deg,#f08c00,#d9480f)}
+.donehero .ok-mark{background:rgba(255,255,255,.2);color:#fff;margin:0 auto 10px;box-shadow:0 0 0 6px rgba(255,255,255,.08)}
+.dh-title{font-size:13px;font-weight:600;opacity:.9}
+.dh-no{font-size:20px;font-weight:700;letter-spacing:.02em;margin:2px 0 10px}
+.dh-shop{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;background:rgba(255,255,255,.16);font-weight:600;font-size:14px}
+.dh-shop .av.sm{width:26px;height:26px;border-radius:999px;font-size:11px;box-shadow:0 0 0 2px rgba(255,255,255,.5)}
+.donesum{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.ds{border-radius:14px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line)}
+.ds span{display:block;font-size:12px;color:var(--ink-3);font-weight:600}
+.ds b{font-size:19px}
+.ds.due{background:var(--neg-soft);border-color:transparent}
+.ds.due span,.ds.due b{color:var(--neg)}
+.donebtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dbtn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;border-radius:14px;font-weight:700;font-size:14.5px;text-decoration:none}
+.dbtn svg{width:18px;height:18px;flex:none}
+.dbtn.pdf{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff}
+.dbtn.dl{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);border:1px solid var(--line)}
+.dbtn.wa{grid-column:1/-1;background:linear-gradient(135deg,#25d366,#1fa855);color:#fff;box-shadow:0 6px 18px rgba(31,168,85,.3)}
+.nextbtns{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.nbtn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;border-top:1px solid var(--line)}
+.nbtn:first-child{border-top:0}
+.nbtn .av.sm{display:grid;place-items:center;color:#fff}
+.nbtn .av.sm svg{width:16px;height:16px}
+.nbtn b{display:block;font-size:14.5px}
+.nbtn small{font-size:12px;color:var(--ink-3)}
+.nbtn > svg{width:16px;height:16px;color:var(--ink-3);flex:none}
+.field{margin-top:12px}
+.field label{display:block;font-size:12.5px;color:var(--ink-3);font-weight:600;margin-bottom:6px}
+.field input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:15px;outline:none}
+</style>
+</head>
+<body>
+
+<div id="alLock" role="dialog" aria-modal="true">
+<style>
+  /* ডিফল্টে লক — স্ক্রিপ্ট কোনো কারণে না চললেও অ্যাপ খোলা থাকবে না */
+  html[data-al-open] #alLock { display: none !important; }
+  html:not([data-al-open]), html:not([data-al-open]) body { overflow: hidden !important; }
+  html:not([data-al-open]) body > *:not(#alLock) { visibility: hidden !important; }
+  #alLock {
+    position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center;
+    padding: 16px; overflow-y: auto; box-sizing: border-box; visibility: visible !important;
+    background: radial-gradient(circle at 20% 15%, #4b3fd6 0, transparent 45%),
+                radial-gradient(circle at 85% 90%, #b8336a 0, transparent 40%), #14122b;
+    font-family: 'Hind Siliguri', 'Nirmala UI', 'Segoe UI', system-ui, sans-serif; color: #1a1a2e;
+  }
+  #alLock * { box-sizing: border-box; }
+  #alLock .al-card {
+    width: 100%; max-width: 360px; background: #fff; border-radius: 22px; padding: 26px 22px 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45); text-align: center; margin: auto;
+  }
+  #alLock .al-ico {
+    width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; background: linear-gradient(135deg, #6c5ce7, #a55eea); box-shadow: 0 8px 22px rgba(108,92,231,.4);
+  }
+  #alLock .al-logo {
+    display: block; width: auto; height: auto; max-width: 180px; max-height: 96px; margin: 0 auto 12px;
+    object-fit: contain; border: none; box-shadow: none;
+  }
+  #alLock .al-org { font-size: 20px; font-weight: 800; color: #1a1a2e; margin: 0 0 2px; line-height: 1.3; letter-spacing: .2px; }
+  #alLock .al-app { font-size: 12.5px; font-weight: 700; color: #8a86a8; letter-spacing: .3px; margin: 0 0 18px; }
+  #alLock .al-app:empty { display: none; }
+  #alLock .al-sub { font-size: 13px; font-weight: 600; color: #6b6b85; line-height: 1.55; margin: -4px 0 14px; }
+  #alLock .al-sub:empty { display: none; }
+  #alLock .al-f { text-align: left; margin-bottom: 10px; }
+  #alLock .al-f label { display: block; font-size: 12.5px; font-weight: 800; color: #444; margin: 0 0 5px; }
+  #alLock .al-in {
+    display: block; width: 100%; margin: 0; padding: 12px 14px; border: 2px solid #e1e5f0; border-radius: 12px;
+    font-family: inherit; font-size: 18px; font-weight: 700; line-height: 1.2; letter-spacing: 3px; color: #1a1a2e; background: #fff;
+    -webkit-text-security: disc; outline: none; box-shadow: none; height: auto; min-height: 0;
+  }
+  #alLock.al-show .al-in { -webkit-text-security: none; }
+  #alLock .al-in:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,.15); }
+  #alLock .al-btn {
+    display: block; width: 100%; margin: 6px 0 0; padding: 13px; border: none; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 800; line-height: 1.2; color: #fff; background: linear-gradient(135deg, #6c5ce7, #4a3fc4);
+    box-shadow: 0 6px 18px rgba(108,92,231,.35); height: auto;
+  }
+  #alLock .al-btn:disabled { opacity: .6; cursor: wait; }
+  #alLock .al-err { min-height: 18px; margin: 10px 0 0; font-size: 13px; font-weight: 700; color: #c0392b; line-height: 1.5; }
+  #alLock .al-err.ok { color: #2d6a4f; }
+  #alLock .al-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+  #alLock .al-link {
+    background: none; border: none; padding: 4px 0; margin: 0; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 700; line-height: 1.3; color: #4a3fc4; box-shadow: none; width: auto; height: auto;
+  }
+  #alLock .al-foot { margin-top: 14px; font-size: 11.5px; font-weight: 600; color: #9a97b5; line-height: 1.5; }
+</style>
+<form class="al-card" id="alForm" autocomplete="off" novalidate>
+  <img class="al-logo" id="alLogo" src="../logo.png" alt="logo"><div class="al-ico" id="alIco" style="display:none">🔒</div>
+  <div class="al-org">Technique Publication</div>
+  <div class="al-app">Retailer Invoice · Invoice</div>
+  <div class="al-sub" id="alSub"></div>
+  <div class="al-f" id="alFa"><label for="alA" id="alLa"></label><input class="al-in" id="alA" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <div class="al-f" id="alFb"><label for="alB" id="alLb"></label><input class="al-in" id="alB" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <div class="al-f" id="alFc"><label for="alC" id="alLc"></label><input class="al-in" id="alC" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <button class="al-btn" id="alBtn" type="submit"></button>
+  <div class="al-err" id="alErr"></div>
+  <div class="al-row">
+    <button class="al-link" id="alEye" type="button">👁 Show PIN</button>
+    <button class="al-link" id="alSwitch" type="button"></button>
+  </div>
+  <div class="al-foot">Authorized Holder: Md. Ashraful Islam</div>
+</form>
+<script>
+(function () {
+  var MODE = 'unlock', IDLE_MIN = 15, MINLEN = 4;
+  var IDLE = IDLE_MIN * 60000, KEY = 'inv_appLockLast';
+  var root = document.documentElement, box = document.getElementById('alLock');
+  function $(id) { return document.getElementById(id); }
+  function bn(n) { return String(n).replace(/[0-9]/g, function (d) { return '০১২৩৪৫৬৭৮৯'[d]; }); }
+
+  // logo না এলে 🔒
+  var logo = $('alLogo');
+  if (logo) {
+    var noLogo = function () { logo.style.display = 'none'; $('alIco').style.display = ''; };
+    logo.addEventListener('error', noLogo);
+    if (logo.complete && !logo.naturalWidth) noLogo();
+  }
+
+  var mode = '', locked = true, busy = false, mem = 0, lastWrite = 0;
+
+  // শেষ কাজের সময় — একই অ্যাপের অন্য উইন্ডোর সাথেও ভাগ হয়
+  function readLast() {
+    var v = 0;
+    try { v = Number(localStorage.getItem(KEY)) || 0; } catch (e) {}
+    return Math.max(v, mem);
+  }
+  function writeLast(t) {
+    mem = t; lastWrite = Date.now();
+    try { localStorage.setItem(KEY, String(t)); } catch (e) {}
+  }
+  function stale() { return Date.now() - readLast() > IDLE; }
+
+  var TEXT = {
+    unlock: { sub: '', a: 'Please Enter the Pin', btn: 'Enter', busy: 'Logging IN...', sw: '🔑 PIN change?' },
+    setup:  { sub: 'নতুন PIN ঠিক করুন — এরপর থেকে এই অ্যাপ খুলতে এই PIN লাগবে। অন্তত ' + bn(MINLEN) + ' অক্ষর।',
+              a: 'New PIN', b: 'Confirm PIN', btn: 'Set PIN', busy: '⏳ সেভ হচ্ছে...', sw: '' },
+    change: { sub: 'আগে বর্তমান PIN দিন, তারপর নতুন PIN।',
+              a: 'Current PIN', b: 'New PIN', c: 'Confirm new PIN', btn: 'Change PIN', busy: '⏳ যাচাই হচ্ছে...', sw: '← ফিরে যান' }
+  };
+
+  function setMode(m) {
+    mode = m;
+    var t = TEXT[m];
+    $('alSub').textContent = t.sub; $('alBtn').textContent = t.btn;
+    $('alLa').textContent = t.a; $('alLb').textContent = t.b || ''; $('alLc').textContent = t.c || '';
+    $('alFb').style.display = t.b ? '' : 'none';
+    $('alFc').style.display = t.c ? '' : 'none';
+    $('alSwitch').textContent = t.sw; $('alSwitch').style.display = t.sw ? '' : 'none';
+    $('alA').value = $('alB').value = $('alC').value = '';
+    msg('');
+    focusA();
+  }
+  function focusA() { setTimeout(function () { try { $('alA').focus(); } catch (e) {} }, 30); }
+  function msg(s, ok) { var e = $('alErr'); e.textContent = s; e.className = 'al-err' + (ok ? ' ok' : ''); }
+
+  function lock() {
+    locked = true;
+    root.removeAttribute('data-al-open');
+    if (document.activeElement && !box.contains(document.activeElement)) { try { document.activeElement.blur(); } catch (e) {} }
+    setMode(MODE === 'setup' ? 'setup' : 'unlock');
+  }
+  function unlock() {
+    locked = false;
+    writeLast(Date.now());
+    $('alA').value = $('alB').value = $('alC').value = '';
+    root.setAttribute('data-al-open', '');
+  }
+  function check() { if (!locked && stale()) lock(); }
+
+  function activity() {
+    if (locked) return;
+    if (stale()) { lock(); return; }
+    var n = Date.now();
+    mem = n;
+    if (n - lastWrite > 15000) writeLast(n);
+  }
+
+  function run(fn, args, ok) {
+    if (!(window.google && google.script && google.script.run)) { msg('সার্ভারের সাথে যোগাযোগ হচ্ছে না — পেজটা রিফ্রেশ করুন।'); return; }
+    var btn = $('alBtn'), label = btn.textContent;
+    busy = true; btn.disabled = true; btn.textContent = TEXT[mode].busy; msg('');
+    var done = function () { busy = false; btn.disabled = false; btn.textContent = label; };
+    var r = google.script.run
+      .withSuccessHandler(function () { done(); ok(); })
+      .withFailureHandler(function (err) {
+        done();
+        msg(String((err && err.message) || err).replace(/^(Exception|Error):\s*/, ''));
+        try { $('alA').select(); } catch (e) {}
+      });
+    r[fn].apply(r, args);
+  }
+
+  $('alForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (busy) return;
+    var a = $('alA').value.trim(), b = $('alB').value.trim(), c = $('alC').value.trim();
+    if (mode === 'unlock') {
+      if (!a) { msg('PIN লিখুন।'); focusA(); return; }
+      run('appLockUnlock', [a], unlock);
+    } else if (mode === 'setup') {
+      if (a.length < MINLEN) { msg('PIN অন্তত ' + bn(MINLEN) + ' অক্ষরের দিন।'); focusA(); return; }
+      if (a !== b) { msg('দুইবার একই PIN লিখুন।'); $('alB').focus(); return; }
+      run('appLockSetup', [a], function () { MODE = 'unlock'; unlock(); });
+    } else {
+      if (!a) { msg('বর্তমান PIN লিখুন।'); focusA(); return; }
+      if (b.length < MINLEN) { msg('নতুন PIN অন্তত ' + bn(MINLEN) + ' অক্ষরের দিন।'); $('alB').focus(); return; }
+      if (b !== c) { msg('নতুন PIN দুইবার একই লিখুন।'); $('alC').focus(); return; }
+      run('appLockChange', [a, b], function () {
+        msg('✅ PIN বদলানো হয়েছে।', true);
+        setTimeout(unlock, 900);
+      });
+    }
+  });
+  $('alSwitch').addEventListener('click', function () { if (!busy) setMode(mode === 'change' ? 'unlock' : 'change'); });
+  $('alEye').addEventListener('click', function () {
+    var on = box.classList.toggle('al-show');
+    this.textContent = on ? '🙈 Hide PIN' : '👁 Show PIN';
+    focusA();
+  });
+
+  // লক থাকা অবস্থায় কীবোর্ড যেন পেছনের অ্যাপে না যায়
+  ['keydown', 'keypress', 'keyup'].forEach(function (t) {
+    window.addEventListener(t, function (e) {
+      if (locked && !box.contains(e.target)) {
+        e.stopImmediatePropagation(); e.preventDefault();
+        if (t === 'keydown') focusA();
+      }
+    }, true);
+  });
+  ['pointerdown', 'mousemove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(function (t) {
+    document.addEventListener(t, activity, { capture: true, passive: true });
+  });
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
+  window.addEventListener('pagehide', function () { if (!locked && mem) writeLast(mem); });
+  setInterval(check, 15000);
+
+  // শুরু: PIN আছে আর শেষ কাজ IDLE এর মধ্যে হলে সরাসরি খোলা, নইলে লক
+  if (MODE === 'unlock' && !stale()) unlock(); else lock();
+})();
+</script>
+</div>
+
+<header class="top">
+  <div class="wrap top-row">
+    <div style="min-width:0">
+      <div class="eyebrow" id="company">Invoice</div>
+      <div class="title" id="title">নতুন Invoice</div>
+    </div>
+    <a class="hbtn" id="dashLink" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Dashboard</a>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</main>
+
+<footer class="dock" id="dock" hidden>
+  <div class="wrap">
+    <div class="sum"><b id="dockTotal">৳0</b><span id="dockNote">০টি বই</span></div>
+    <button class="save" id="saveBtn">Save</button>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<div class="pv" id="pv" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+    <div class="pv-head"><span id="pvTitle">Invoice দেখে নিন</span><button class="pv-x" id="pvX" aria-label="বন্ধ">×</button></div>
+    <div class="pv-body" id="pvBody"></div>
+    <div class="pv-foot">
+      <button class="pv-edit" id="pvEdit">✏️ বদলান</button>
+      <button class="pv-ok" id="pvOk">✓ ঠিক আছে, Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="pv" id="vd" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-labelledby="vdTitle">
+    <div class="pv-head"><span id="vdTitle">Invoice বাতিল</span><button class="pv-x" id="vdX" aria-label="বন্ধ">×</button></div>
+    <div class="pv-body" id="vdBody"></div>
+    <div class="pv-foot">
+      <button class="pv-edit" id="vdNo">না, রাখুন</button>
+      <button class="pv-ok red" id="vdGo">হ্যাঁ, বাতিল করুন</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// কোনো error হলে খালি পাতায় আটকে না থেকে উপরে কারণ দেখায়
+window.addEventListener("error", function (e) {
+  var t = document.getElementById("title");
+  if (t) t.textContent = "সমস্যা: " + (e.message || "অজানা") + (e.lineno ? " (line " + e.lineno + ")" : "");
+});
+</script>
+<script>
+/* ═══════════ Helpers ═══════════ */
+// লেখার ভেতরে দুইটা / পরপর রাখা যাবে না — Google-এর সার্ভার বাকি লাইনকে comment ভেবে কেটে দেয়
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const NF = new Intl.NumberFormat("en-IN");
+const tk = n => (n < 0 ? "-" : "") + "৳" + NF.format(Math.round(Math.abs(n || 0)));
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const bnNum = s => Number(String(s ?? "").replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/[^\d.\-]/g, ""));
+const initials = n => n.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2800);
+}
+const hasServer = () => window.google && google.script && google.script.run;
+// Dashboard password — "Anyone" লিংকে সার্ভার এটা দিয়েই মালিককে চেনে; প্রতিটা ডাকে পাঠাই, এই ফোনে একবার দিলেই মনে থাকে
+function ownerKey() { try { return localStorage.getItem("owner-key") || ""; } catch (e) { return ""; } }
+// সার্ভার password চাইলে (OWNER_KEY) জিজ্ঞেস করে রেখে আবার চেষ্টা — true = এটা password-এর সমস্যা ছিল
+function needKey(err, retry) {
+  const m = String(err && err.message || err);
+  if (m.indexOf("OWNER_KEY") < 0) return false;
+  askOwnerKey(m.replace(/^.*OWNER_KEY:\s*/, ""), retry);
+  return true;
+}
+// Dashboard password-এর কার্ড — PIN লক স্ক্রিনের মতো (ব্রাউজারের সাদামাটা prompt-এর বদলে)।
+// একসাথে কয়েকটা ডাক password চাইলে কার্ড একবারই আসে; password দিলে সবগুলো আবার চলে।
+let KEY_WAIT = null;
+function askOwnerKey(msg, retry) {
+  if (KEY_WAIT) {
+    if (retry) KEY_WAIT.push(retry);
+    const e = document.getElementById("okErr"); if (e && msg) e.textContent = msg;
+    return;
+  }
+  KEY_WAIT = retry ? [retry] : [];
+  const first = !ownerKey();   // আগে কখনো দেওয়া হয়নি = প্রথমবার; নইলে আগেরটা আর মিলছে না
+  const box = document.createElement("div");
+  box.id = "okBox";
+  box.innerHTML = `<style>
+#okBox{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;
+  background:radial-gradient(circle at 20% 15%,#4b3fd6 0,transparent 45%),radial-gradient(circle at 85% 90%,#b8336a 0,transparent 40%),rgba(20,18,43,.97);
+  font-family:'Hind Siliguri','Nirmala UI','Segoe UI',system-ui,sans-serif}
+#okBox *{box-sizing:border-box}
+#okBox .ok-card{width:100%;max-width:360px;margin:auto;background:#fff;color:#1a1a2e;border-radius:22px;padding:26px 22px 20px;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);text-align:center;animation:okIn .3s ease-out}
+@keyframes okIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#okBox .ok-ico{width:64px;height:64px;margin:0 auto 12px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;
+  background:linear-gradient(135deg,#6c5ce7,#a55eea);box-shadow:0 8px 22px rgba(108,92,231,.4)}
+#okBox .ok-t{font-size:20px;font-weight:800;margin:0 0 4px}
+#okBox .ok-s{font-size:13px;font-weight:600;color:#6b6b85;line-height:1.55;margin:0 0 16px}
+#okBox label{display:block;text-align:left;font-size:12.5px;font-weight:800;color:#444;margin:0 0 5px}
+#okBox input{display:block;width:100%;margin:0;padding:12px 14px;border:2px solid #e1e5f0;border-radius:12px;font:inherit;font-size:17px;
+  font-weight:700;color:#1a1a2e;background:#fff;outline:none}
+#okBox input:focus{border-color:#6c5ce7;box-shadow:0 0 0 3px rgba(108,92,231,.15)}
+#okBox .ok-btn{display:block;width:100%;margin:12px 0 0;padding:13px;border:none;border-radius:12px;cursor:pointer;font:inherit;font-size:15px;
+  font-weight:800;color:#fff;background:linear-gradient(135deg,#6c5ce7,#4a3fc4);box-shadow:0 6px 18px rgba(108,92,231,.35)}
+#okBox .ok-err{min-height:18px;margin:10px 0 0;font-size:13px;font-weight:700;color:#c0392b;line-height:1.5}
+#okBox .ok-row{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+#okBox .ok-link{background:none;border:none;padding:4px 0;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;color:#4a3fc4}
+#okBox .ok-foot{margin-top:14px;font-size:11.5px;font-weight:600;color:#9a97b5;line-height:1.5}
+</style>
+<form class="ok-card" autocomplete="off" novalidate>
+  <div class="ok-ico">🔑</div>
+  <div class="ok-t">Dashboard Password</div>
+  <div class="ok-s">${first ? "এই ব্রাউজারে প্রথমবার — একবার দিলে এখানে আর চাইবে না।" : "আগের password আর মিলছে না — নতুনটা দিন।"}</div>
+  <label for="okIn">Password</label>
+  <input id="okIn" type="password" autocomplete="current-password">
+  <button class="ok-btn" type="submit">ঢুকুন</button>
+  <div class="ok-err" id="okErr">${first ? "" : esc(msg)}</div>
+  <div class="ok-row">
+    <button class="ok-link" type="button" id="okEye">👁 দেখাও</button>
+    <button class="ok-link" type="button" id="okCancel">বাতিল</button>
+  </div>
+  <div class="ok-foot">Master → 🔑 Dashboard password বা ⚙️ ম্যানেজ → সেটিংস-এ যেটা সেট করেছেন</div>
+</form>`;
+  document.body.appendChild(box);
+  const inp = box.querySelector("#okIn");
+  setTimeout(() => inp.focus(), 60);
+  const close = () => { box.remove(); const w = KEY_WAIT || []; KEY_WAIT = null; return w; };
+  box.querySelector("#okEye").onclick = function () {
+    const show = inp.type === "password"; inp.type = show ? "text" : "password";
+    this.textContent = show ? "🙈 লুকাও" : "👁 দেখাও"; inp.focus();
+  };
+  box.querySelector("#okCancel").onclick = () => { close(); };
+  box.querySelector("form").onsubmit = e => {
+    e.preventDefault();
+    const k = inp.value.trim();
+    if (!k) { box.querySelector("#okErr").textContent = "Password লিখুন।"; inp.focus(); return; }
+    try { localStorage.setItem("owner-key", k); } catch (x) {}
+    close().forEach(f => f());   // ভুল হলে সার্ভার আবার OWNER_KEY দেবে — কার্ড আবার আসবে, লাল লেখাসহ
+  };
+}
+
+/* ═══════════ State ═══════════ */
+let D = null;
+const A = { step: "shop", r: -1, date: ymd(new Date()), mode: "Invoice", items: [], q: "", rq: "", saving: false, result: null };
+const isReturn = () => A.mode !== "Invoice";
+const pFind = p => (p.name + " " + p.code + " " + p.kw).toLowerCase();
+// শব্দ ধরে মেলানো — "math 10" লিখলে দুটো শব্দই (যেকোনো ক্রমে) নাম/Code/Keyword-এ থাকতে হবে
+const pHas = (p, q) => { const h = pFind(p); return String(q || "").toLowerCase().split(/\s+/).every(w => !w || h.includes(w)); };
+// তালিকায় আগে-পরে: নামের শুরুতে মিল > নামের ভেতরে > Code/Keyword-এ
+const pRank = (p, q) => {
+  const n = String(p.name).toLowerCase(), s = String(q || "").trim().toLowerCase();
+  return n.indexOf(s) === 0 ? 3 : n.includes(s) ? 2 : pFind(p).includes(s) ? 1 : 0;
+};
+
+// অসমাপ্ত invoice ফোনেই রেখে দিই — app বন্ধ হয়ে গেলেও হারায় না
+function saveDraft() {
+  if ((A.step !== "items" && A.step !== "product") || A.r < 0) return store.set("ia-draft", null);
+  store.set("ia-draft", { shop: D.retailers[A.r].name, date: A.date, mode: A.mode, editInv: A.editInv || "", editOld: A.editOld || 0,
+    items: A.items.map(it => ({ p: D.products[it.p].name, qty: it.qty, disc: it.disc, neg: it.neg })) });
+}
+function restoreDraft() {
+  const d = store.get("ia-draft");
+  if (!d || !d.items || !d.items.length) return false;
+  const r = D.retailers.findIndex(x => x.name === d.shop);
+  if (r < 0) return false;
+  const items = d.items.map(x => ({ ...x, p: D.products.findIndex(p => p.name === x.p) })).filter(x => x.p >= 0);
+  Object.assign(A, { step: "items", r, date: d.date || A.date, mode: d.mode || "Invoice", items,
+                     editInv: d.editInv || "", editOld: d.editOld || 0 });
+  return true;
+}
+
+/* ═══════════ Data ═══════════ */
+// শেষবার আনা ডাটা ফোনেই রাখি — খুললেই সাথে সাথে retailer/বইয়ের তালিকা, নতুন ডাটা পেছনে আসে
+const CACHE_KEY = "ia-data";
+function cacheData(raw) {
+  try { const s = JSON.stringify(raw); if (s.length < 4500000) localStorage.setItem(CACHE_KEY, s); } catch (e) { /* জায়গা না থাকলে থাক */ }
+}
+function showHeader(status) {
+  $("#company").textContent = (D.company || "Invoice") + (status ? " · " + status : "");
+  if (D.appUrl) { const a = $("#dashLink"); a.href = D.appUrl; a.hidden = false; }
+}
+function load() {
+  let done = false, shown = false;
+  const start = raw => {
+    D = raw;
+    D.products.forEach(p => { p.code = p.code || ""; p.kw = p.kw || ""; });
+    if (restoreDraft()) toast("আগের অসমাপ্ত invoice ফিরিয়ে আনা হয়েছে");
+    shown = true;
+    render();
+  };
+  try {
+    const c = localStorage.getItem(CACHE_KEY);
+    if (c) { start(JSON.parse(c)); showHeader("হালনাগাদ হচ্ছে…"); }
+  } catch (e) { D = null; shown = false; }
+
+  const fail = err => {
+    done = true;
+    if (needKey(err, () => location.reload())) { // password দিলে পাতা আবার খুলি (অসমাপ্ত invoice ফোনে রাখা থাকে)
+      if (!shown) $("#app").innerHTML = `<div class="card empty">Dashboard password লাগবে<br><br>
+        <button class="save" onclick="location.reload()" style="padding:10px 18px;font-size:14px">Password দিন</button></div>`;
+      return;
+    }
+    if (shown) { showHeader("আগের ডাটা"); toast("নতুন ডাটা আনা যায়নি — আগের ডাটা দেখাচ্ছে"); return; }
+    $("#app").innerHTML = `<div class="card empty">ডাটা আনা যায়নি<br><small>${esc(err && err.message || err)}</small><br><br>
+      <button class="save" onclick="location.reload()" style="padding:10px 18px;font-size:14px">আবার চেষ্টা</button></div>`;
+  };
+  const ok = json => {
+    done = true;
+    const raw = typeof json === "string" ? JSON.parse(json) : json;
+    cacheData(raw);
+    if (!shown) { start(raw); showHeader(""); return; }
+    applyFresh(raw);
+    showHeader("");
+  };
+  setTimeout(() => { if (!done) fail("সার্ভার উত্তর দিচ্ছে না — ইন্টারনেট দেখে আবার চেষ্টা করুন।"); }, 45000);
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getInvoiceAppData(ownerKey());
+  else setTimeout(() => ok(demoData()), 300);
+}
+
+// আগের ডাটা দেখানোর মাঝে নতুন ডাটা এলে — যা লিখছেন তা না ভেঙে শুধু তালিকা আর বাকি বদলাই
+function applyFresh(raw) {
+  const hadShop = A.r >= 0;
+  remapData(raw);
+  if (hadShop && A.r < 0 && (A.step === "items" || A.step === "product")) { closePreview(); A.step = "shop"; render(); return; }
+  if (A.step === "shop") $("#shopList").innerHTML = shopListHtml();
+  else if (A.step === "items") {
+    const due = $("#shopDue"); if (due) due.textContent = tk(prevDue());
+    refreshItems(true);
+  }
+}
+
+/* ═══════════ Render ═══════════ */
+function render() {
+  $("#title").textContent = A.step === "done" ? (A.result && A.result.edited ? "Invoice সংশোধিত হয়েছে" : "Invoice সেভ হয়েছে") :
+    A.step === "product" ? "নতুন বই" : A.editInv && A.step === "items" ? "✏️ সংশোধন" :
+    (isReturn() && A.step === "items" ? "ফেরত / বদল" : "নতুন Invoice");
+  $("#dock").hidden = A.step !== "items";
+  if (A.step === "shop") renderShop();
+  else if (A.step === "items") renderItems();
+  else if (A.step === "product") renderProduct();
+  else renderDone();
+  document.documentElement.classList.toggle("items", A.step === "items");
+  document.documentElement.classList.toggle("sticky", A.step === "items" || A.step === "shop");
+  fitSticky();
+  saveDraft();
+}
+// আটকে থাকা অংশের উচ্চতা — retailer কার্ড ঠিক header-এর নিচে বসে, আর নতুন বইয়ের Qty ঘরে গেলে সেটা কার্ডের নিচে ঢাকা পড়ে না
+function fitSticky() {
+  const top = $(".top").offsetHeight, sh = $("#stickhead");
+  document.documentElement.style.setProperty("--toph", top + "px");
+  document.documentElement.style.setProperty("--stickh", top + (sh ? sh.offsetHeight : 0) + 12 + "px");
+}
+window.addEventListener("resize", fitSticky);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSticky); // font পরে এলে উচ্চতা বদলায়
+
+/* ── ধাপ ১: Retailer ── */
+// প্রতিটা retailer-এর নিজের রং (নাম থেকে) — তালিকায় এক নজরে আলাদা করে চেনা যায়
+const AV_COLORS = [["#4263eb", "#3b5bdb"], ["#0c8599", "#0b7285"], ["#2f9e44", "#2b8a3e"], ["#e8590c", "#d9480f"],
+                   ["#ae3ec9", "#9c36b5"], ["#d6336c", "#c2255c"], ["#7048e8", "#6741d9"], ["#1c7ed6", "#1971c2"]];
+function avStyle(name) {
+  let h = 0;
+  for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [a, b] = AV_COLORS[h % AV_COLORS.length];
+  return `background:linear-gradient(140deg,${a},${b})`;
+}
+const ICON = {
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+  pdf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3 21l2-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/></svg>'
+};
+function shopListHtml() {
+  const q = A.rq.trim().toLowerCase();
+  const list = D.retailers.map((r, i) => ({ ...r, i }))
+    .filter(r => (r.active || q) && (!q || r.name.toLowerCase().includes(q) || (r.phone || "").includes(q)));
+  return list.length ? list.map(r => `
+    <button class="item shopitem" data-shop="${r.i}">
+      <div class="av" style="${avStyle(r.name)}">${esc(initials(r.name))}</div>
+      <div class="grow"><div class="t1">${esc(r.name)}${r.active ? "" : ` <span class="pill">Inactive</span>`}</div>
+        ${r.phone ? `<div class="t2 phone">${ICON.phone}<span class="num">${esc(r.phone)}</span></div>` : ""}</div>
+      ${r.due > 0 ? `<div class="duebox"><small>বাকি</small><b class="num">${tk(r.due)}</b></div>`
+                  : `<div class="duebox ok"><small>বাকি নেই</small><b>✓</b></div>`}
+      <span class="chev">${ICON.chev}</span>
+    </button>`).join("") : `<div class="empty">কেউ পাওয়া যায়নি</div>`;
+}
+// সাম্প্রতিক invoice-এর নিচে ✏️ সংশোধন / ✕ বাতিল
+function invActs(h) {
+  const a = `data-shopname="${esc(h.retailer)}" data-no="${esc(h.no)}" data-total="${Number(h.total) || 0}"`;
+  return `<button class="ibtn" data-iedit ${a}>${ICON.edit}সংশোধন</button><button class="ibtn red" data-ivoid ${a}>${ICON.x}বাতিল</button>`;
+}
+// সাম্প্রতিক invoice — কার্ড: retailer, নম্বর, টাকা; নিচে PDF / Download / WhatsApp আর সংশোধন / বাতিল
+function invCard(h) {
+  const ret = /^RET-/.test(h.no) || Number(h.total) < 0;
+  const links = [h.url ? `<a class="ibtn" href="${esc(h.url)}" target="_blank">${ICON.pdf}PDF</a>` : "",
+    h.dl ? `<a class="ibtn" href="${esc(h.dl)}" target="_blank">${ICON.dl}Download</a>` : "",
+    h.wa ? `<a class="ibtn wa" href="${esc(h.wa)}" target="_blank">${ICON.wa}WhatsApp</a>` : ""].join("");
+  return `<div class="invcard${ret ? " ret" : ""}">
+    <div class="invtop">
+      <div class="av sm" style="${avStyle(h.retailer)}">${esc(initials(h.retailer))}</div>
+      <div class="grow"><div class="t1">${esc(h.retailer)}</div><div class="invno num">${esc(h.no)}</div></div>
+      <div class="amt num">${tk(h.total)}${ret ? `<small>ফেরত</small>` : ""}</div>
+    </div>
+    <div class="invbtns">${links}<span class="sp"></span>${invActs(h)}</div>
+  </div>`;
+}
+function renderShop() {
+  const recentShops = (store.get("ia-shops") || []).map(n => D.retailers.findIndex(r => r.name === n)).filter(i => i >= 0).slice(0, 6);
+  const hist = store.get("ia-history") || [];
+  // Master শিট / Dashboard / retailer ফাইল থেকে বানানো সাম্প্রতিক invoice — এই ফোনের তালিকায় যেগুলো নেই
+  const mine = new Set(hist.slice(0, 8).map(h => h.retailer + "|" + h.no));
+  const others = (D.recent || []).filter(h => !mine.has(h.retailer + "|" + h.no));
+  const active = D.retailers.filter(r => r.active);
+  const totalDue = D.retailers.reduce((a, r) => a + Math.max(r.due || 0, 0), 0);
+  const owing = D.retailers.filter(r => r.due > 0).length;
+  // মোট বাকি, খোঁজা আর "সম্প্রতি" উপরে আটকে থাকে — নিচে retailer তালিকা আর সাম্প্রতিক invoice scroll হয়
+  $("#app").innerHTML = `
+    <div class="stickhead" id="stickhead">
+    <div class="stats">
+      <div class="stat s-due"><span>মোট বাকি</span><b class="num">${tk(totalDue)}</b><small>${owing} জন retailer-এর কাছে</small></div>
+      <div class="stat s-shop"><span>Retailer</span><b class="num">${active.length}</b><small>সক্রিয়</small></div>
+    </div>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="rq" placeholder="Retailer খুঁজুন — নাম বা ফোন" value="${esc(A.rq)}" autocomplete="off"></label>
+    ${recentShops.length ? `<div class="label sec">সম্প্রতি</div><div class="chips">${recentShops.map(i =>
+      `<button class="chip" data-shop="${i}"><i style="${avStyle(D.retailers[i].name)}"></i>${esc(D.retailers[i].name)}</button>`).join("")}</div>` : ""}
+    <div class="sh-pad"></div>
+    </div>
+    <div class="label sec">সব Retailer <span class="count num">${active.length}</span></div>
+    <div class="list" id="shopList">${shopListHtml()}</div>
+    ${hist.length ? `<div class="label sec">এই ফোন থেকে সাম্প্রতিক Invoice</div>
+      ${hist.slice(0, 8).map(invCard).join("")}` : ""}
+    ${others.length ? `<div class="label sec">${hist.length ? "অন্য জায়গা থেকে সাম্প্রতিক Invoice" : "সাম্প্রতিক Invoice"}</div>
+      ${others.slice(0, 8).map(invCard).join("")}` : ""}
+    <div class="hint">হোম স্ক্রিনে রাখতে: ব্রাউজারের ⋮ মেনু → "Add to Home screen"</div>`;
+}
+
+/* ── ধাপ ২: বই ── */
+function lineTotal(it) {
+  const p = D.products[it.p];
+  const q = (bnNum(it.qty) || 0) * (it.neg ? -1 : 1);
+  return (p.mrp || 0) * (1 - (Number(it.disc) || 0)) * q;
+}
+function itemsHtml() {
+  if (!A.items.length) return `<div class="emptybox">${ICON.book}<div>এখনো কোনো বই নেই<br><small>নিচে খুঁজে যোগ করুন — বাংলা নাম, Code বা Keyword</small></div></div>`;
+  return A.items.map((it, k) => {
+    const p = D.products[it.p];
+    return `<div class="line${it.neg ? " neg" : ""}">
+      <div class="nm"><span class="sl num">${k + 1}</span><span class="grow">${esc(p.name)}${p.code ? `<span class="code">${esc(p.code)}</span>` : ""} ${p.type === "Combo" ? `<span class="pill">Combo</span>` : ""}</span>
+        <button class="rm" data-rm="${k}" aria-label="সরান">${ICON.x}</button></div>
+      <div class="ctl">
+        <div class="stepper"><button data-dec="${k}" aria-label="কম">−</button>
+          <input data-qty="${k}" inputmode="numeric" value="${esc(it.qty)}" placeholder="0"><button data-inc="${k}" aria-label="বেশি">+</button></div>
+        <div class="disc">${isReturn() ? `<button class="sign ${it.neg ? "" : "plus"}" data-sign="${k}">${it.neg ? "ফেরত" : "নতুন"}</button>` : ""}
+          ছাড় <input data-disc="${k}" inputmode="decimal" value="${Math.round((Number(it.disc) || 0) * 1000) / 10}">%</div>
+        <div class="lt"><span id="lt-${k}">${tk(lineTotal(it))}</span><small>MRP ${tk(p.mrp)}</small></div>
+      </div></div>`;
+  }).join("");
+}
+function resultsHtml() {
+  const q = A.q.trim().toLowerCase();
+  const added = new Set(A.items.map(it => it.p));
+  // খোঁজা না থাকলে: এই ফোনে বেশি ব্যবহৃত বইগুলো আগে
+  const use = store.get("ia-use") || {};
+  let list = D.products.map((p, i) => ({ ...p, i })).filter(p => !added.has(p.i) && pHas(p, q));
+  if (!q) list.sort((a, b) => (use[b.name] || 0) - (use[a.name] || 0));
+  else list = list.map((p, k) => [pRank(p, q), k, p]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).map(x => x[2]);
+  list = list.slice(0, q ? 40 : 12);
+  // খুঁজে না পেলে (বা তালিকায় না থাকলে) এখান থেকেই নতুন বই যোগ
+  const addNew = q ? `<button class="item newprod" data-newprod>
+      <span class="plus">＋</span><div class="grow">"${esc(A.q.trim())}" — নতুন বই হিসেবে যোগ করুন</div></button>` : "";
+  return (list.length ? list.map(p => `
+    <button class="item resitem" data-add="${p.i}">
+      <div class="grow"><div class="t1 wrapline">${esc(p.name)}${p.code ? `<span class="code">${esc(p.code)}</span>` : ""}${p.type === "Combo" ? ` <span class="pill">Combo</span>` : ""}</div>
+        ${p.kw ? `<div class="t2">${esc(p.kw)}</div>` : ""}</div>
+      <div class="mrp num">${tk(p.mrp)}</div><span class="addbtn">＋</span>
+    </button>`).join("") : `<div class="empty">কিছু পাওয়া যায়নি</div>`) + addNew;
+}
+
+/* ── নতুন বই (Master PriceList → সব retailer ফাইল) ── */
+// এক বা একাধিক নতুন বই — A.np = [{ name, type, mrp, code, kw, err }]; Save একবারই, সবগুলো এই invoice-এ বসে
+const npBlank = name => ({ name: name || "", type: "Normal", mrp: "", code: "", kw: "", err: "" });
+const npSaveLabel = () => A.np.length > 1 ? `${A.np.length}টা বই Save` : "Save";
+function npCardsHtml() {
+  return A.np.map((r, k) => `
+    <div class="card npcard${r.err ? " npbad" : ""}">
+      <div class="label" style="margin-top:0"><span class="nphead"><span class="sl num">${k + 1}</span>নতুন বই</span>${A.np.length > 1 ? `<button class="rm" data-nprm="${k}" aria-label="সরান">${ICON.x}</button>` : ""}</div>
+      ${r.err ? `<div class="pv-warn" style="margin:0 0 8px">❌ ${esc(r.err)}</div>` : ""}
+      <div class="field" style="margin-top:0"><label>বইয়ের নাম *</label><input data-npf="name" data-k="${k}" value="${esc(r.name)}" placeholder="যেমন: ইজি ফিজিক্স (৯ম-১০ম শ্রেণি)" autocomplete="off"></div>
+      <div class="row2" style="margin-top:12px">
+        <div class="seg" style="align-self:end">${["Normal", "Combo"].map(t => `<button data-nptype="${t}" data-k="${k}" class="${r.type === t ? "on" : ""}">${t}</button>`).join("")}</div>
+        <input data-npf="mrp" data-k="${k}" inputmode="decimal" placeholder="MRP ৳ *" value="${esc(r.mrp)}" autocomplete="off" style="font-weight:700">
+      </div>
+      <div class="row2">
+        <input data-npf="code" data-k="${k}" placeholder="Code (ঐচ্ছিক)" value="${esc(r.code)}" autocomplete="off">
+        <input data-npf="kw" data-k="${k}" placeholder="Keywords (ঐচ্ছিক)" value="${esc(r.kw)}" autocomplete="off">
+      </div>
+    </div>`).join("");
+}
+function renderProduct() {
+  $("#app").innerHTML = `
+    <div id="npList">${npCardsHtml()}</div>
+    <button class="big morebtn" style="width:100%;margin-top:0" id="npMore">＋ আরেকটা বই</button>
+    <div id="npOut" class="t2" style="margin:12px 2px">Save করলে সব বই একসাথে Master PriceList-এ যোগ হবে, সব retailer ফাইলে যাবে, আর এই invoice-এ বসে যাবে। retailer বেশি হলে ১-২ মিনিট লাগতে পারে।</div>
+    <button class="big pdf" style="width:100%" id="npSave">${npSaveLabel()}</button>
+    <button class="big ghost" style="width:100%" id="npBack">বাতিল — invoice-এ ফিরে যান</button>`;
+  setTimeout(() => { const a = document.querySelector(`[data-npf="${A.np[0].name ? "mrp" : "name"}"][data-k="0"]`); if (a) a.focus(); }, 100);
+}
+function npRedraw() {
+  $("#npList").innerHTML = npCardsHtml();
+  $("#npSave").textContent = npSaveLabel();
+}
+// নতুন ডাটা এলে retailer আর বইয়ের ক্রম বদলাতে পারে — নাম দিয়ে আবার মিলিয়ে নিই
+function remapData(nd) {
+  const shop = A.r >= 0 ? D.retailers[A.r].name : "";
+  const items = A.items.map(it => ({ ...it, name: D.products[it.p].name }));
+  D = nd;
+  D.products.forEach(p => { p.code = p.code || ""; p.kw = p.kw || ""; });
+  A.r = D.retailers.findIndex(r => r.name === shop);
+  A.items = items.map(it => ({ p: D.products.findIndex(p => p.name === it.name), qty: it.qty, disc: it.disc, neg: it.neg }))
+    .filter(it => it.p >= 0);
+}
+function submitProduct(update) {
+  // সম্পূর্ণ ফাঁকা কার্ড বাদ; নাম বা MRP না থাকলে সেই কার্ডেই লাল লেখা
+  A.np = A.np.filter((r, k) => k === 0 || r.name.trim() || String(r.mrp).trim() || r.code.trim() || r.kw.trim());
+  let bad = 0;
+  A.np.forEach(r => { r.err = !r.name.trim() ? "বইয়ের নাম দিন" : !(bnNum(r.mrp) > 0) ? "MRP দিন" : ""; if (r.err) bad++; });
+  if (bad) { npRedraw(); return toast(`${bad}টা বইয়ে নাম বা MRP নেই`); }
+  const list = A.np.map(r => ({ name: r.name.trim(), type: r.type, mrp: bnNum(r.mrp), code: r.code.trim(), keywords: r.kw.trim() }));
+  const btn = $("#npSave");
+  btn.disabled = true; btn.textContent = "Save হচ্ছে… (সব retailer-এ যাচ্ছে)";
+  const fail = err => { btn.disabled = false; btn.textContent = npSaveLabel(); toast("❌ " + (err && err.message || err)); };
+  const ok = json => {
+    const r = typeof json === "string" ? JSON.parse(json) : json;
+    if (r.error) return fail(r.error);
+    if (r.ask) { // আগে থাকা বই — কী করব জিজ্ঞেস
+      btn.disabled = false; btn.textContent = npSaveLabel();
+      $("#npOut").innerHTML = `<b style="color:var(--ink)">${r.ask.length}টা বই আগেই আছে:</b><br>${r.ask.map(n => "• " + esc(n)).join("<br>")}<br>
+        ধরন, MRP, Code/Keywords নতুন মান দিয়ে আপডেট করবেন? (দুই ক্ষেত্রেই বইগুলো এই invoice-এ বসবে)
+        <button class="big ghost" style="width:100%" data-npupdate="1">হ্যাঁ, আপডেট করুন</button>
+        <button class="big ghost" style="width:100%" data-npupdate="0">না, যেমন আছে রাখুন</button>`;
+      return;
+    }
+    remapData(r.data);
+    cacheData(r.data);
+    // যোগ / আপডেট / আগে থেকে থাকা — সবগুলো বই সাথে সাথে invoice-এ (সমস্যার বই বাদে)
+    if (A.r >= 0) r.results.forEach(x => {
+      if (x.status === "error") return;
+      const k = D.products.findIndex(p => p.name === x.name);
+      if (k >= 0 && !A.items.some(it => it.p === k)) A.items.push({ p: k, qty: "", disc: D.discounts[A.r][k], neg: isReturn() });
+    });
+    const parts = [r.added ? `${r.added}টা যোগ` : "", r.updated ? `${r.updated}টা আপডেট` : ""].filter(Boolean);
+    const msg = (parts.length ? "✓ " + parts.join(", ") + ` · ${r.synced}টা retailer ফাইলে গেছে` : "");
+    const left = A.np.filter((row, k) => r.results[k] && r.results[k].status === "error")
+      .map(row => Object.assign(row, { err: r.results[A.np.indexOf(row)].msg }));
+    if (left.length) { // সমস্যার বইগুলো এই পাতাতেই থাকে
+      A.np = left;
+      renderProduct();
+      $("#npOut").innerHTML = `<div class="pv-warn" style="margin:0">${msg ? esc(msg) + "<br>" : ""}${left.length}টা বইয়ে সমস্যা — ঠিক করে আবার Save চাপুন, বা বাতিল করে invoice-এ ফিরুন।</div>`;
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    A.q = ""; A.step = A.r >= 0 ? "items" : "shop";
+    render();
+    if (msg) toast(msg);
+    const q = document.querySelector(`[data-qty="${Math.max(A.items.length - list.length, 0)}"]`); if (q) q.focus();
+  };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).addProductsFromApp(list, update === undefined ? null : update, "invoice", ownerKey());
+  else setTimeout(() => { // demo — আগে থাকা নামে জিজ্ঞেস, একই নাম দুইবার হলে সমস্যা
+    const nd = JSON.parse(JSON.stringify(D));
+    const have = new Set(nd.products.map(p => p.name)), seen = new Set();
+    if (update === undefined) { const ask = list.filter(p => have.has(p.name)).map(p => p.name); if (ask.length) return ok({ ask }); }
+    const results = list.map(p => {
+      if (seen.has(p.name)) return { status: "error", name: p.name, msg: "এই তালিকায় একই নাম দুইবার — উপরেরটা নেওয়া হয়েছে, এটা মুছে দিন" };
+      seen.add(p.name);
+      if (have.has(p.name)) return { status: update ? "updated" : "skipped", name: p.name };
+      nd.products.push({ name: p.name, type: p.type, mrp: p.mrp, code: p.code, kw: p.keywords });
+      nd.discounts.forEach(row => row.push(p.type === "Combo" ? 0.4 : 0.3));
+      return { status: "added", name: p.name };
+    });
+    const n = s => results.filter(x => x.status === s).length;
+    ok({ results, added: n("added"), updated: n("updated"), skipped: n("skipped"), errors: n("error"), synced: 0, failed: [], data: nd });
+  }, 500);
+}
+function renderItems() {
+  const r = D.retailers[A.r];
+  // header আর retailer কার্ড উপরে আটকে থাকে — বইয়ের তালিকা লম্বা হলেও retailer, বাকি, তারিখ, ধরন সবসময় দেখা যায়
+  $("#app").innerHTML = `
+    <div class="stickhead" id="stickhead">
+    ${A.editInv ? `<div class="edit-banner"><div>✏️ সংশোধন: <b>${esc(A.editInv)}</b><br>Save করলে এই invoice বদলে যাবে (একই নম্বর)</div>
+      <button id="editCancel">সংশোধন বাদ</button></div>` : ""}
+    <div class="card shopcard${isReturn() ? " ret" : ""}">
+      <div class="shop"><div class="av" style="${avStyle(r.name)}">${esc(initials(r.name))}</div>
+        <div class="grow"><div class="t1">${esc(r.name)}</div>
+          ${r.phone ? `<div class="t2 phone">${ICON.phone}<span class="num">${esc(r.phone)}</span></div>` : ""}</div>
+        ${A.editInv ? "" : `<button class="change" id="changeShop">বদলান</button>`}</div>
+      <div class="duebar"><span>${A.editInv ? "আগের বাকি (এই invoice ছাড়া)" : "এখন বাকি"}</span><b class="num" id="shopDue">${tk(prevDue())}</b></div>
+      <div class="row2">
+        <input type="date" id="date" value="${A.date}" aria-label="তারিখ">
+        <div class="seg mode">${[["Invoice", "Invoice"], ["Return / Exchange", "ফেরত/বদল"]].map(([k, l]) =>
+          `<button data-mode="${k}" class="${A.mode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      </div>
+    </div>
+    </div>
+    <div class="label sec">বই <span class="count num" id="itemCount"${A.items.length ? "" : " hidden"}>${A.items.length}</span></div>
+    <div id="items">${itemsHtml()}</div>
+    <label class="search" style="margin-top:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" placeholder="বই খুঁজুন — নাম, Code বা Keyword" value="${esc(A.q)}" autocomplete="off"></label>
+    <div class="label sec" id="resLabel">${A.q ? "খোঁজার ফল" : "বেশি ব্যবহৃত"}</div>
+    <div class="list" id="results">${resultsHtml()}</div>`;
+  updateDock();
+}
+// আগের বাকি — সংশোধনে এই invoice-এর পুরনো টাকা বাদ দিয়ে (নইলে দুইবার ধরা হতো)
+function prevDue() { return A.r >= 0 ? D.retailers[A.r].due - (A.editInv ? A.editOld || 0 : 0) : 0; }
+function updateDock() {
+  const total = A.items.reduce((a, it) => a + lineTotal(it), 0);
+  const qty = A.items.reduce((a, it) => a + (bnNum(it.qty) || 0) * (it.neg ? -1 : 1), 0);
+  $("#dockTotal").textContent = tk(total);
+  $("#dockNote").textContent = `${A.items.length}টি বই · ${NF.format(qty)} কপি · মোট বাকি হবে ${tk(prevDue() + total)}`;
+  $("#saveBtn").disabled = A.saving;
+  $("#saveBtn").textContent = A.saving ? "Save হচ্ছে…" : "Save";
+}
+function refreshItems(full) {
+  if (full) {
+    $("#items").innerHTML = itemsHtml(); $("#results").innerHTML = resultsHtml();
+    const c = $("#itemCount"); if (c) { c.textContent = A.items.length; c.hidden = !A.items.length; }
+  }
+  else A.items.forEach((it, k) => { const el = $("#lt-" + k); if (el) el.textContent = tk(lineTotal(it)); });
+  updateDock();
+  saveDraft();
+}
+
+/* ── ধাপ ৩: ফলাফল ── */
+function renderDone() {
+  const r = A.result;
+  const ret = r.total < 0;
+  $("#app").innerHTML = `
+    <div class="donehero${ret ? " ret" : ""}">
+      <div class="ok-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div class="dh-title">${r.edited ? "Invoice সংশোধিত হয়েছে" : ret ? "ফেরত Save হয়েছে" : "Invoice Save হয়েছে"}</div>
+      <div class="dh-no num">${esc(r.invoiceNo)}</div>
+      <div class="dh-shop"><span class="av sm" style="${avStyle(r.retailer)}">${esc(initials(r.retailer))}</span>${esc(r.retailer)}</div>
+    </div>
+    <div class="card donesum">
+      <div class="ds"><span>এই invoice</span><b class="num">${tk(r.total)}</b></div>
+      <div class="ds due"><span>এখন মোট বাকি</span><b class="num">${tk(r.due)}</b></div>
+      ${r.masterOk ? "" : `<div class="pv-warn" style="grid-column:1/-1;margin:2px 0 0">Master-এ পরের Refresh-এ পুরোপুরি আসবে</div>`}
+    </div>
+    <div class="label sec">PDF ও পাঠানো</div>
+    <div class="donebtns">
+      ${r.url ? `<a class="dbtn pdf" href="${esc(r.url)}" target="_blank">${ICON.pdf}<span>PDF দেখুন</span></a>` : `<div class="card empty" style="grid-column:1/-1">PDF হয়নি — Master-এর System Log দেখুন</div>`}
+      ${r.download ? `<a class="dbtn dl" href="${esc(r.download)}" target="_blank">${ICON.dl}<span>Download</span></a>` : ""}
+      <a class="dbtn wa" href="${esc(r.wa)}" target="_blank">${ICON.wa}<span>WhatsApp-এ পাঠান</span></a>
+    </div>
+    <div class="label sec">এরপর</div>
+    <div class="nextbtns">
+      <button class="nbtn" id="againSame"><span class="av sm" style="${avStyle(r.retailer)}">${ICON.plus}</span>
+        <div class="grow"><b>আরেকটা Invoice</b><small>${esc(r.retailer)}-এর জন্যই</small></div>${ICON.chev}</button>
+      <button class="nbtn" id="againNew"><span class="av sm" style="background:linear-gradient(140deg,#495057,#343a40)">${ICON.shop}</span>
+        <div class="grow"><b>অন্য retailer</b><small>retailer তালিকায় ফিরে যান</small></div>${ICON.chev}</button>
+    </div>`;
+}
+
+/* ═══════════ Save — আগে preview, "ঠিক আছে" চাপলে তবেই Save ═══════════ */
+function submit() {
+  if (A.saving) return;
+  const items = A.items.filter(it => bnNum(it.qty));
+  if (!items.length) return toast("অন্তত একটা বইয়ের Qty দিন");
+  if (!isReturn() && items.some(it => bnNum(it.qty) < 0)) return toast("ফেরত দিতে হলে 'ফেরত/বদল' বাছাই করুন");
+  showPreview(items);
+}
+
+// কাগজের invoice-এর মতো করে — PDF-এ যা যাবে (Invoice No Save-এর সময় বসে)
+function showPreview(items) {
+  const r = D.retailers[A.r];
+  const lines = items.map(it => {
+    const p = D.products[it.p];
+    return { name: p.name, qty: (bnNum(it.qty) || 0) * (it.neg ? -1 : 1), mrp: p.mrp || 0, disc: Number(it.disc) || 0, total: lineTotal(it) };
+  });
+  const total = lines.reduce((a, l) => a + l.total, 0);
+  const qty = lines.reduce((a, l) => a + l.qty, 0);
+  const [y, m, d] = A.date.split("-");
+  const money = n => NF.format(Math.round(n * 100) / 100);
+  const skipped = A.items.length - items.length;
+  $("#pvBody").innerHTML = `
+    <div class="paper">
+      <div class="co">${esc(D.company || "")}</div>
+      <div class="ttl">${isReturn() || total < 0 ? "RETURN / EXCHANGE" : "INVOICE"}</div>
+      <div class="meta">
+        <div><b>Date:</b> ${d}/${m}/${y}<br><b>Name:</b> ${esc(r.name)}</div>
+        <div><b>Invoice No:</b> ${A.editInv ? esc(A.editInv) + " (সংশোধিত)" : "Save-এর সময়"}<br><b>Phone:</b> ${esc(r.phone || "")}</div>
+      </div>
+      <table class="ptable">
+        <thead><tr><th>SL</th><th>Product</th><th>Qty</th><th>MRP</th><th>ছাড়</th><th>Total</th></tr></thead>
+        <tbody>${lines.map((l, i) => `<tr><td class="num">${i + 1}</td><td class="nm">${esc(l.name)}</td>
+          <td class="num">${NF.format(l.qty)}</td><td class="num">${money(l.mrp)}</td>
+          <td class="num">${Math.round(l.disc * 1000) / 10}%</td><td class="num">${money(l.total)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right">মোট</td><td class="num">${NF.format(qty)}</td>
+          <td colspan="2"></td><td class="num">${money(total)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card" style="margin:10px 0 0">
+      ${A.editInv ? `<div class="sumrow"><span>আগে ছিল</span><b class="num">${tk(A.editOld || 0)}</b></div>` : ""}
+      <div class="sumrow"><span>${A.editInv ? "এখন হবে" : "এই invoice"}</span><b class="num">${tk(total)}</b></div>
+      <div class="sumrow"><span>আগের বাকি${A.editInv ? " (এই invoice ছাড়া)" : ""}</span><b class="num">${tk(prevDue())}</b></div>
+      <div class="sumrow b"><span>Save-এর পর মোট বাকি</span><span class="num">${tk(prevDue() + total)}</span></div>
+    </div>
+    ${skipped ? `<div class="pv-warn">Qty না দেওয়া ${skipped}টা বই এই invoice-এ যাবে না।</div>` : ""}`;
+  const ok = $("#pvOk"); ok.disabled = false; ok.textContent = "✓ ঠিক আছে, Save";
+  $("#pvTitle").textContent = A.editInv ? "সংশোধন দেখে নিন" : "Invoice দেখে নিন";
+  $("#pv").hidden = false;
+  $("#pvBody").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+function closePreview() {
+  if (A.saving) return; // Save চলার মাঝে বন্ধ হয় না
+  $("#pv").hidden = true;
+  document.body.style.overflow = "";
+}
+
+function save(items) {
+  if (A.saving) return;
+  const r = D.retailers[A.r];
+  const p = { retailer: r.name, date: A.date, mode: A.mode, editInv: A.editInv || "",
+    items: items.map(it => ({ product: D.products[it.p].name, qty: (bnNum(it.qty) || 0) * (it.neg ? -1 : 1), disc: Number(it.disc) || 0 })) };
+  A.saving = true; updateDock();
+  const okBtn = $("#pvOk"); okBtn.disabled = true; okBtn.textContent = "Save হচ্ছে…";
+  const fail = err => {
+    A.saving = false; updateDock();
+    okBtn.disabled = false; okBtn.textContent = "✓ ঠিক আছে, Save";
+    toast("❌ " + (err && err.message || err));
+  };
+  const ok = json => {
+    const res = typeof json === "string" ? JSON.parse(json) : json;
+    if (res.problems) { fail(res.problems.join(" · ")); return; }
+    A.saving = false;
+    A.result = res.result;
+    r.due = res.result.due;
+    // এই ফোনের ইতিহাস: সাম্প্রতিক retailer, বেশি ব্যবহৃত বই, invoice-এর লিংক
+    const shops = (store.get("ia-shops") || []).filter(n => n !== r.name); shops.unshift(r.name); store.set("ia-shops", shops.slice(0, 10));
+    const use = store.get("ia-use") || {}; p.items.forEach(x => { use[x.product] = (use[x.product] || 0) + 1; }); store.set("ia-use", use);
+    // সংশোধন হলে একই নম্বরের পুরনো লাইন সরিয়ে নতুনটা উপরে
+    const hist = (store.get("ia-history") || []).filter(h => !(h.no === res.result.invoiceNo && h.retailer === r.name));
+    hist.unshift({ retailer: r.name, no: res.result.invoiceNo, total: res.result.total, url: res.result.url || "",
+      dl: res.result.download || "", wa: res.result.wa });
+    store.set("ia-history", hist.slice(0, 20));
+    if (D.recent) D.recent.forEach(h => { if (h.no === res.result.invoiceNo && h.retailer === r.name) h.total = res.result.total; });
+    A.items = []; A.q = ""; A.step = "done"; A.editInv = ""; A.editOld = 0;
+    closePreview();
+    render();
+    window.scrollTo({ top: 0 });
+  };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).createInvoiceLite(p, ownerKey());
+  else setTimeout(() => ok({ result: { invoiceNo: p.editInv || "INV-DEMO-" + A.date.replace(/-/g, ""), retailer: r.name,
+    total: items.reduce((a, it) => a + lineTotal(it), 0), due: prevDue() + items.reduce((a, it) => a + lineTotal(it), 0),
+    url: "#", download: "#", wa: "#", masterOk: true, edited: !!p.editInv } }), 600);
+}
+
+/* ═══════════ Save করা Invoice: সংশোধন / বাতিল ═══════════ */
+const sameName = (a, b) => String(a).replace(/\s+/g, "") === String(b).replace(/\s+/g, "");
+
+// retailer-এর ফাইল থেকে invoice এনে বইয়ের পাতায় বসাই — Save-এর আগে আগের মতোই preview
+function startEdit(shop, no, oldTotal) {
+  if (A.items.length && A.step !== "done" && !confirm("এখন যা লেখা আছে তা মুছে এই invoice সংশোধন করবেন?")) return;
+  const r = D.retailers.findIndex(x => x.name === shop);
+  if (r < 0) return toast("❌ \"" + shop + "\" retailer তালিকায় নেই");
+  toast(no + " আনা হচ্ছে…");
+  const fail = err => toast("❌ " + (err && err.message || err));
+  const ok = json => {
+    const x = typeof json === "string" ? JSON.parse(json) : json;
+    if (x.error) return fail(x.error);
+    const missing = [];
+    const items = x.items.map(it => {
+      const k = D.products.findIndex(p => sameName(p.name, it.product));
+      if (k < 0) missing.push(it.product);
+      return { p: k, qty: String(Math.abs(it.qty)), disc: it.disc, neg: it.qty < 0 };
+    });
+    if (missing.length) return fail("এই বই এখন তালিকায় নেই (Inactive?): " + missing.join(", ") + " — Master শিট থেকে সংশোধন করুন");
+    Object.assign(A, { r, step: "items", date: x.date || ymd(new Date()), mode: x.mode, items, q: "", rq: "",
+                       editInv: x.invoiceNo, editOld: oldTotal || 0 });
+    /* "আনা হচ্ছে…" বার্তা সরাই */
+    $("#toast").classList.remove("on");
+    render();
+    window.scrollTo({ top: 0 });
+  };
+  const p = { retailer: shop, invoiceNo: no };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getInvoiceForEdit(p, ownerKey());
+  else setTimeout(() => ok({ invoiceNo: no, mode: "Invoice", date: ymd(new Date()),
+    items: D.products.slice(0, 2).map((p, i) => ({ product: p.name, qty: 5 + i, disc: 0.3 })) }), 300);
+}
+function cancelEdit() {
+  Object.assign(A, { editInv: "", editOld: 0, items: [], q: "", step: "shop", r: -1 });
+  render();
+}
+
+function startVoid(shop, no, total) {
+  A.voiding = { shop, no };
+  $("#vdBody").innerHTML = `
+    <div class="card" style="margin:0">
+      <div style="font-weight:700;font-size:16px" class="num">${esc(no)}</div>
+      <div class="t2">${esc(shop)}</div>
+      <div class="sumrow b"><span>মোট</span><span class="num">${tk(total)}</span></div>
+    </div>
+    <div class="pv-warn">বাতিল করলে এই invoice হিসাব থেকে (retailer-এর বাকি থেকেও) বাদ যাবে — retailer ফাইল আর Master দুই জায়গা থেকেই। Void Log-এ কপি থাকবে।</div>
+    <div class="field"><label>কারণ (ঐচ্ছিক)</label><input id="vdReason" placeholder="যেমন: ভুল retailer-এ করা হয়েছিল" autocomplete="off"></div>`;
+  const go = $("#vdGo"); go.disabled = false; go.textContent = "হ্যাঁ, বাতিল করুন";
+  $("#vd").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function closeVoid() {
+  if (A.voidBusy) return;
+  $("#vd").hidden = true;
+  document.body.style.overflow = "";
+}
+function doVoid() {
+  const v = A.voiding;
+  if (!v || A.voidBusy) return;
+  const go = $("#vdGo"); go.disabled = true; go.textContent = "বাতিল হচ্ছে…";
+  A.voidBusy = true;
+  const fail = err => { A.voidBusy = false; go.disabled = false; go.textContent = "হ্যাঁ, বাতিল করুন"; toast("❌ " + (err && err.message || err)); };
+  const ok = json => {
+    const x = typeof json === "string" ? JSON.parse(json) : json;
+    A.voidBusy = false;
+    store.set("ia-history", (store.get("ia-history") || []).filter(h => !(h.no === v.no && h.retailer === v.shop)));
+    if (x.data) { remapData(x.data); cacheData(x.data); }
+    closeVoid();
+    if (A.step === "shop") render();
+    toast(`✓ ${v.no} বাতিল হয়েছে` + (x.result && x.result.masterOk === false ? " · Master-এ পরের Refresh-এ সরবে" : ""));
+  };
+  const p = { retailer: v.shop, invoiceNo: v.no, reason: $("#vdReason").value };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).voidInvoiceApp(p, "invoice", ownerKey());
+  else setTimeout(() => {
+    const nd = JSON.parse(JSON.stringify(D));
+    nd.recent = (nd.recent || []).filter(h => !(h.no === v.no && h.retailer === v.shop));
+    ok({ result: { masterOk: true }, data: nd });
+  }, 400);
+}
+
+/* ═══════════ Events ═══════════ */
+function pickShop(i) {
+  A.r = i; A.step = "items"; A.rq = "";
+  // retailer বদলালে আগে যোগ করা বইয়ের discount এই retailer-এর হিসাবে
+  A.items.forEach(it => { it.disc = D.discounts[i][it.p]; });
+  render();
+  window.scrollTo({ top: 0 });
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "pv") { closePreview(); return; } // popup-এর বাইরে চাপলে বন্ধ
+  if (e.target.id === "vd") { closeVoid(); return; }
+  const b = e.target.closest("[data-shop],[data-add],[data-rm],[data-inc],[data-dec],[data-sign],[data-mode],#changeShop,#saveBtn,#againSame,#againNew," +
+    "[data-newprod],[data-nptype],[data-npupdate],[data-nprm],#npMore,#npSave,#npBack,#pvOk,#pvEdit,#pvX," +
+    "[data-iedit],[data-ivoid],#editCancel,#vdGo,#vdNo,#vdX");
+  if (!b) return;
+  const d = b.dataset;
+  // A.items থেকে আবার নিই — preview খোলা থাকতে নতুন ডাটা এলে বইয়ের ক্রম বদলাতে পারে (remapData)
+  if (b.id === "pvOk") save(A.items.filter(it => bnNum(it.qty)));
+  else if (b.id === "pvEdit" || b.id === "pvX") closePreview();
+  else if (d.iedit !== undefined) startEdit(d.shopname, d.no, Number(d.total) || 0);
+  else if (d.ivoid !== undefined) startVoid(d.shopname, d.no, Number(d.total) || 0);
+  else if (b.id === "editCancel") cancelEdit();
+  else if (b.id === "vdGo") doVoid();
+  else if (b.id === "vdNo" || b.id === "vdX") closeVoid();
+  else if (d.newprod !== undefined) { A.np = [npBlank(A.q.trim())]; A.step = "product"; render(); window.scrollTo({ top: 0 }); }
+  else if (d.nptype) {
+    A.np[+d.k].type = d.nptype;
+    document.querySelectorAll(`[data-nptype][data-k="${d.k}"]`).forEach(x => x.classList.toggle("on", x.dataset.nptype === d.nptype));
+  }
+  else if (b.id === "npMore") {
+    A.np.push(npBlank(""));
+    npRedraw();
+    const a = document.querySelector(`[data-npf="name"][data-k="${A.np.length - 1}"]`);
+    if (a) { a.focus(); a.scrollIntoView({ block: "center", behavior: "smooth" }); }
+  }
+  else if (d.nprm !== undefined) { A.np.splice(+d.nprm, 1); npRedraw(); }
+  else if (b.id === "npSave") submitProduct();
+  else if (d.npupdate !== undefined) submitProduct(d.npupdate === "1");
+  else if (b.id === "npBack") { A.step = "items"; render(); }
+  else if (d.shop !== undefined) pickShop(+d.shop);
+  else if (d.add !== undefined) {
+    const k = +d.add;
+    A.items.push({ p: k, qty: "", disc: D.discounts[A.r][k], neg: isReturn() });
+    A.q = ""; $("#q").value = ""; $("#resLabel").textContent = "বেশি ব্যবহৃত";
+    refreshItems(true);
+    const q = document.querySelector(`[data-qty="${A.items.length - 1}"]`); if (q) q.focus();
+  }
+  else if (d.rm !== undefined) { A.items.splice(+d.rm, 1); refreshItems(true); }
+  else if (d.inc !== undefined || d.dec !== undefined) {
+    const k = +(d.inc !== undefined ? d.inc : d.dec);
+    const v = Math.max(0, (bnNum(A.items[k].qty) || 0) + (d.inc !== undefined ? 1 : -1));
+    A.items[k].qty = v ? String(v) : "";
+    const el = document.querySelector(`[data-qty="${k}"]`); if (el) el.value = A.items[k].qty;
+    refreshItems(false);
+  }
+  else if (d.sign !== undefined) { const it = A.items[+d.sign]; it.neg = !it.neg; refreshItems(true); }
+  else if (d.mode) {
+    A.mode = d.mode;
+    A.items.forEach(it => { it.neg = isReturn(); });
+    render();
+  }
+  else if (b.id === "changeShop") { A.step = "shop"; render(); }
+  else if (b.id === "saveBtn") submit();
+  else if (b.id === "againSame") { A.step = "items"; A.mode = "Invoice"; A.date = ymd(new Date()); render(); }
+  else if (b.id === "againNew") { A.step = "shop"; A.r = -1; A.mode = "Invoice"; A.date = ymd(new Date()); render(); }
+});
+// খোঁজার সময় শুধু তালিকা বদলাই — ঘরটা নতুন করে আঁকলে বাংলা টাইপ (Avro/Gboard) ভেঙে যায়
+document.addEventListener("input", e => {
+  const t = e.target, d = t.dataset;
+  if (t.id === "rq") { A.rq = t.value; $("#shopList").innerHTML = shopListHtml(); return; }
+  if (t.id === "q") { A.q = t.value; $("#results").innerHTML = resultsHtml(); $("#resLabel").textContent = A.q ? "খোঁজার ফল" : "বেশি ব্যবহৃত"; return; }
+  if (d.npf) { A.np[+d.k][d.npf] = t.value; return; } // নতুন বইয়ের কার্ড — নতুন করে আঁকি না (বাংলা টাইপ ভাঙে না)
+  if (d.qty !== undefined) { A.items[+d.qty].qty = t.value; refreshItems(false); return; }
+  if (d.disc !== undefined) { const v = bnNum(t.value); A.items[+d.disc].disc = isNaN(v) ? 0 : v / 100; refreshItems(false); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "date") { A.date = e.target.value || ymd(new Date()); saveDraft(); }
+});
+// কীবোর্ডের Enter — খোঁজায় একটাই ফল থাকলে সেটা যোগ
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#pv").hidden) { closePreview(); return; }
+  if (e.key === "Escape" && !$("#vd").hidden) { closeVoid(); return; }
+  if (e.key !== "Enter") return;
+  if (e.target.id === "q") { const one = document.querySelectorAll("#results [data-add]"); if (one.length === 1) one[0].click(); }
+  if (e.target.id === "rq") { const one = document.querySelectorAll("#shopList [data-shop]"); if (one.length === 1) one[0].click(); }
+});
+
+/* ═══════════ Demo (Apps Script-এর বাইরে খুললে) ═══════════ */
+function demoData() {
+  const products = [["ইজি বাংলা ১ম পত্র", 550, "EB-1", "bangla 1st"], ["ইজি ইংলিশ ১ম পত্র", 795, "EE-1", "english 1st"],
+    ["ইজি ফিজিক্স (৯ম-১০ম শ্রেণিঃ এসএসসি ২৭ ও ২৮)", 830, "EP-01", "easy physics, physics ssc"], ["ইজি কেমিস্ট্রি", 820, "EC-01", "chemistry"],
+    ["৯ম সাইন্স কম্বো (সকল বিষয়)", 9275, "C9S", "science combo"]]
+    .map(([name, mrp, code, kw], i) => ({ name, mrp, code, kw, type: i === 4 ? "Combo" : "Normal" }));
+  const retailers = [["Ejanani", 4810], ["Boighor Library", 0], ["Alo Book House", 12500], ["Rokomari", 2300]]
+    .map(([name, due]) => ({ name, due, phone: "01700000000", active: true }));
+  return { company: "Demo · Technique Publication", appUrl: "", retailers, products,
+    discounts: retailers.map(() => products.map(p => p.type === "Combo" ? 0.4 : 0.3)), recent: [] };
+}
+
+load();
+</script>
+</body>
+</html>

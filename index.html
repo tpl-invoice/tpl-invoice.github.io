@@ -24,7 +24,7 @@ var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT
   window.google={script:{run:new Proxy({},{get:function(_,k){return builder()[k];}})}};
 })();
 </script>
-<script>(function(){var m=/[?&]page=(invoice|staff)\b/.exec(location.search);if(m)location.replace(m[1]==='invoice'?'https://tpl-invoice-app.github.io/':'staff/');})();</script>
+<script>(function(){var m=/[?&]page=(invoice|staff)\b/.exec(location.search);if(m)location.replace(m[1]==='invoice'?'app/':'staff/');})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Retailer Invoice</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -696,7 +696,7 @@ a.act{text-decoration:none;color:inherit}
   <button class="sb-it" data-view="invoices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>Invoice</button>
   <div class="sb-lbl">সিস্টেম</div>
   <button class="sb-it" data-view="manage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>ম্যানেজ</button>
-  <a class="sb-it" id="sbInvApp" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/></svg>Invoice App<span class="sb-ext">↗</span></a>
+  <a class="sb-it" id="sbInvApp" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/></svg>Invoice App</a>
   <div class="sb-foot">
     <div class="sb-upd" id="sbUpdated"></div>
     <div>Technique Publication · Retailer Invoice</div>
@@ -712,7 +712,7 @@ a.act{text-decoration:none;color:inherit}
         <div class="vsub" id="viewSub"></div>
       </div>
       <div style="display:flex;gap:8px">
-        <a class="icon-btn inv-app" id="invAppLink" hidden aria-label="Invoice App" title="Invoice App (আলাদা)">
+        <a class="icon-btn inv-app" id="invAppLink" hidden aria-label="Invoice App" title="নতুন Invoice বানান">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/></svg>
           <span>Invoice App</span></a>
         <button class="icon-btn" data-view="manage" aria-label="ম্যানেজ" title="ম্যানেজ — Retailer, বই, Discount, Staff, সেটিংস, টুলস">
@@ -1670,7 +1670,7 @@ function showNewMenu() {
       <button data-newprod><i>✚</i><div>নতুন বই যোগ<span>Master PriceList-এ যোগ হয়ে সব retailer ফাইলে চলে যাবে</span></div></button>
       ${invoiceAppUrl() ? `<a href="${esc(invoiceAppUrl())}" target="_top" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-decoration:none;color:inherit;font-weight:600;font-size:15px">
         <i style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent);color:#fff;font-style:normal;font-size:18px;flex:none">⇱</i>
-        <div>Invoice App খুলুন<span style="display:block;font-size:12.5px;color:var(--ink-3);font-weight:500">শুধু invoice বানানোর আলাদা app — হোম স্ক্রিনে রাখা যায়</span></div></a>` : ""}
+        <div>Invoice App খুলুন<span style="display:block;font-size:12.5px;color:var(--ink-3);font-weight:500">invoice বানানোর পাতা — কাজ শেষে উপরের "Dashboard" বোতামে ফিরে আসবেন</span></div></a>` : ""}
     </div>`);
 }
 
