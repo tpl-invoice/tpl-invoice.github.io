@@ -112,16 +112,16 @@
     '.ntf-root.ntf-dark{--nb:#161a2e;--ni:#e8eaf6;--ni2:#aab1c8;--nm:#6e7497;--nl:#2a3050;--ns:#1d2140;--nbr:#8b93ff;--nu:rgba(139,147,255,.11);--nsh:0 24px 60px -12px rgba(0,0,0,.7)}',
     '.ntf-root *{box-sizing:border-box}',
     '.ntf-scrim{position:fixed;inset:0;z-index:2147480000;background:rgba(15,23,42,.42);opacity:0;transition:opacity .18s}',
-    '.ntf-root.on .ntf-scrim{opacity:1}',
-    '.ntf-root:not(.sheet) .ntf-scrim{background:transparent}',
+    '.ntf-root.ntf-open .ntf-scrim{opacity:1}',
+    '.ntf-root:not(.ntf-sheet) .ntf-scrim{background:transparent}',
     '.ntf-panel{position:fixed;z-index:2147480001;background:var(--nb);border:1px solid var(--nl);box-shadow:var(--nsh);display:flex;flex-direction:column;overflow:hidden;',
     ' width:390px;max-width:calc(100vw - 24px);border-radius:18px;opacity:0;transform:translateY(-6px) scale(.98);transition:opacity .16s,transform .16s}',
-    '.ntf-root.on .ntf-panel{opacity:1;transform:none}',
-    '.ntf-root.sheet .ntf-panel{left:0!important;right:0!important;bottom:0;top:auto!important;width:100%;max-width:none;max-height:86vh!important;border-radius:22px 22px 0 0;',
+    '.ntf-root.ntf-open .ntf-panel{opacity:1;transform:none}',
+    '.ntf-root.ntf-sheet .ntf-panel{left:0!important;right:0!important;bottom:0;top:auto!important;width:100%;max-width:none;max-height:86vh!important;border-radius:22px 22px 0 0;',
     ' transform:translateY(30px);padding-bottom:env(safe-area-inset-bottom)}',
-    '.ntf-root.sheet.on .ntf-panel{transform:none}',
+    '.ntf-root.ntf-sheet.ntf-open .ntf-panel{transform:none}',
     '.ntf-grab{display:none;width:40px;height:4px;border-radius:2px;background:var(--nl);margin:8px auto 0}',
-    '.ntf-root.sheet .ntf-grab{display:block}',
+    '.ntf-root.ntf-sheet .ntf-grab{display:block}',
     '.ntf-hd{display:flex;align-items:center;gap:8px;padding:14px 14px 10px 18px}',
     '.ntf-hd h3{margin:0;font-size:16.5px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}',
     '.ntf-hd h3 small{font-size:11.5px;font-weight:700;color:#fff;background:#ef4444;border-radius:20px;padding:1px 8px}',
@@ -130,20 +130,20 @@
     '.ntf-ib svg{width:18px;height:18px}',
     '.ntf-body{overflow-y:auto;flex:1;min-height:120px;overscroll-behavior:contain}',
     '.ntf-cta{margin:0 14px 10px;padding:11px 12px;border-radius:13px;background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(217,70,239,.10));display:flex;gap:10px;align-items:center}',
-    '.ntf-cta .t{flex:1;font-size:13px;color:var(--ni2)}.ntf-cta .t b{display:block;color:var(--ni);font-size:13.5px}',
+    '.ntf-cta .ntf-t{flex:1;font-size:13px;color:var(--ni2)}.ntf-cta .ntf-t b{display:block;color:var(--ni);font-size:13.5px}',
     '.ntf-btn{border:0;border-radius:10px;padding:8px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:var(--nbr);color:#fff;white-space:nowrap}',
-    '.ntf-btn.g{background:var(--ns);color:var(--ni);border:1px solid var(--nl)}',
-    '.ntf-btn.r{background:#e11d48}',
+    '.ntf-btn.ntf-g{background:var(--ns);color:var(--ni);border:1px solid var(--nl)}',
+    '.ntf-btn.ntf-r{background:#e11d48}',
     '.ntf-btn:disabled{opacity:.6;cursor:wait}',
     '.ntf-it{display:flex;gap:11px;padding:11px 16px 11px 14px;border-top:1px solid var(--nl);cursor:pointer;position:relative}',
     '.ntf-it:hover{background:var(--ns)}',
-    '.ntf-it.u{background:var(--nu)}',
-    '.ntf-it.u:after{content:"";position:absolute;right:12px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--nbr)}',
+    '.ntf-it.ntf-u{background:var(--nu)}',
+    '.ntf-it.ntf-u:after{content:"";position:absolute;right:12px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--nbr)}',
     '.ntf-ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:color-mix(in srgb,var(--kc) 14%,transparent)}',
     '.ntf-tx{flex:1;min-width:0;padding-right:10px}',
     '.ntf-ti{font-weight:700;font-size:13.8px;line-height:1.35}',
     '.ntf-b{color:var(--ni2);font-size:13px;margin-top:2px;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
-    '.ntf-it.x .ntf-b{display:block;-webkit-line-clamp:unset}',
+    '.ntf-it.ntf-x .ntf-b{display:block;-webkit-line-clamp:unset}',
     '.ntf-tm{color:var(--nm);font-size:11.5px;margin-top:4px;display:flex;gap:10px;align-items:center}',
     '.ntf-tm a{color:var(--nbr);font-weight:700;text-decoration:none}',
     '.ntf-empty{text-align:center;padding:38px 20px 44px;color:var(--nm)}',
@@ -154,15 +154,15 @@
     '.ntf-sec{padding:4px 18px 14px}',
     '.ntf-sec h4{margin:12px 0 8px;font-size:12px;letter-spacing:.06em;color:var(--nm);font-weight:700;text-transform:uppercase}',
     '.ntf-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--nl);border-radius:12px;margin-bottom:8px}',
-    '.ntf-row .t{flex:1;min-width:0;font-size:13px;color:var(--ni2)}.ntf-row .t b{display:block;color:var(--ni);font-size:13.5px}',
-    '.ntf-msg{font-size:12.5px;margin:2px 0 8px;color:var(--ni2)}.ntf-msg.e{color:#e11d48}.ntf-msg.o{color:#059669}',
+    '.ntf-row .ntf-t{flex:1;min-width:0;font-size:13px;color:var(--ni2)}.ntf-row .ntf-t b{display:block;color:var(--ni);font-size:13.5px}',
+    '.ntf-msg{font-size:12.5px;margin:2px 0 8px;color:var(--ni2)}.ntf-msg.ntf-e{color:#e11d48}.ntf-msg.ntf-o{color:#059669}',
     '.ntf-sw{position:relative;width:44px;height:26px;flex:none;border-radius:13px;border:0;background:var(--nl);cursor:pointer;transition:background .15s}',
     '.ntf-sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}',
-    '.ntf-sw.on{background:#10b981}.ntf-sw.on:after{left:21px}',
+    '.ntf-sw.ntf-act{background:#10b981}.ntf-sw.ntf-act:after{left:21px}',
     '.ntf-file{display:none}',
     '.ntf-toast{position:fixed;z-index:2147480002;top:14px;left:50%;transform:translate(-50%,calc(-100% - 40px));visibility:hidden;width:min(420px,calc(100vw - 24px));background:var(--nb);color:var(--ni);',
     ' border:1px solid var(--nl);border-radius:16px;box-shadow:var(--nsh);padding:12px 14px;display:flex;gap:11px;cursor:pointer;transition:transform .25s cubic-bezier(.2,.9,.3,1.2),visibility 0s .25s}',
-    '.ntf-toast.on{transform:translate(-50%,0);visibility:visible;transition:transform .25s cubic-bezier(.2,.9,.3,1.2),visibility 0s}',
+    '.ntf-toast.ntf-show{transform:translate(-50%,0);visibility:visible;transition:transform .25s cubic-bezier(.2,.9,.3,1.2),visibility 0s}',
     '.ntf-toast .ntf-b{-webkit-line-clamp:2}'
   ].join('\n');
 
@@ -247,7 +247,7 @@
     $('.ntf-panel', R).hidden = false;
     place();
     paint();
-    requestAnimationFrame(function () { R.classList.add('on'); });
+    requestAnimationFrame(function () { R.classList.add('ntf-open'); });
     markRead();
     poll(true);
     if (pushState() === 'on') refreshPush(false);
@@ -255,7 +255,7 @@
   function close() {
     if (!S.open || !R) return;
     S.open = false;
-    R.classList.remove('on');
+    R.classList.remove('ntf-open');
     setTimeout(function () {
       if (S.open) return;
       $('.ntf-scrim', R).hidden = true;
@@ -265,7 +265,7 @@
   function place() {
     var p = $('.ntf-panel', R), w = window.innerWidth, h = window.innerHeight;
     var sheet = w < 640;
-    R.classList.toggle('sheet', sheet);
+    R.classList.toggle('ntf-sheet', sheet);
     if (sheet) { p.style.cssText = ''; return; }
     var r = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { bottom: 56, right: w - 16, left: w - 60 };
     var top = Math.max(12, Math.min(r.bottom + 10, h - 220));
@@ -283,7 +283,7 @@
     var cta = '';
     var ps = pushState();
     if (ps === 'off' && !ls('ctaHide')) {
-      cta = '<div class="ntf-cta"><div class="t"><b>📱 এই ডিভাইসে Push চালু করুন</b>অ্যাপ বন্ধ থাকলেও নোটিফিকেশন আসবে</div>' +
+      cta = '<div class="ntf-cta"><div class="ntf-t"><b>📱 এই ডিভাইসে Push চালু করুন</b>অ্যাপ বন্ধ থাকলেও নোটিফিকেশন আসবে</div>' +
             '<button class="ntf-btn" data-n="push-on">চালু</button><button class="ntf-ib" data-n="cta-hide" title="পরে">' + ICO.x + '</button></div>';
     }
     var list = S.items.length ? S.items.map(itemHtml).join('') :
@@ -298,7 +298,7 @@
   }
   function itemHtml(x) {
     var s = split(x), u = x.t > S.seenR;
-    return '<div class="ntf-it' + (u ? ' u' : '') + (S.expanded[x.i] ? ' x' : '') + '" data-n="item" data-i="' + esc(x.i) + '">' +
+    return '<div class="ntf-it' + (u ? ' ntf-u' : '') + (S.expanded[x.i] ? ' ntf-x' : '') + '" data-n="item" data-i="' + esc(x.i) + '">' +
       '<div class="ntf-ic" style="--kc:' + s.col + '">' + esc(s.ic) + '</div>' +
       '<div class="ntf-tx"><div class="ntf-ti">' + esc(s.ti) + '</div>' +
       (x.b ? '<div class="ntf-b">' + esc(x.b) + '</div>' : '') +
@@ -317,7 +317,7 @@
     e.preventDefault();
     if (a === 'close') close();
     else if (a === 'reload') { S.ver = ''; poll(true); }
-    else if (a === 'item') { var i = el.getAttribute('data-i'); S.expanded[i] = !S.expanded[i]; el.classList.toggle('x', !!S.expanded[i]); }
+    else if (a === 'item') { var i = el.getAttribute('data-i'); S.expanded[i] = !S.expanded[i]; el.classList.toggle('ntf-x', !!S.expanded[i]); }
     else if (a === 'clear') clearAll(el);
     else if (a === 'set') { S.view = 'set'; S.msg = null; paint(); loadCfg(); }
     else if (a === 'back') { S.view = 'list'; S.msg = null; paint(); }
@@ -337,35 +337,35 @@
       '<h3>নোটিফিকেশন সেটিংস</h3><button class="ntf-ib" data-n="close" title="বন্ধ">' + ICO.x + '</button></div><div class="ntf-body"><div class="ntf-sec">';
     h += '<h4>এই ডিভাইস</h4>';
     if (ps === 'na') {
-      h += '<div class="ntf-row"><div class="t"><b>📵 Push এখানে চলে না</b>' + esc(naReason()) + '</div></div>';
+      h += '<div class="ntf-row"><div class="ntf-t"><b>📵 Push এখানে চলে না</b>' + esc(naReason()) + '</div></div>';
     } else {
       var on = ps === 'on';
-      h += '<div class="ntf-row"><div class="t"><b>📱 Push নোটিফিকেশন</b>' +
+      h += '<div class="ntf-row"><div class="ntf-t"><b>📱 Push নোটিফিকেশন</b>' +
         (on ? 'চালু — অ্যাপ বন্ধ থাকলেও আসবে' : ps === 'blocked' ? 'ব্রাউজারে ব্লক করা — ঠিকানার পাশের 🔒 → Notifications → Allow' : 'বন্ধ') + '</div>' +
-        (on ? '<button class="ntf-btn g" data-n="push-off">বন্ধ করুন</button>' : '<button class="ntf-btn" data-n="push-on">চালু করুন</button>') + '</div>';
+        (on ? '<button class="ntf-btn ntf-g" data-n="push-off">বন্ধ করুন</button>' : '<button class="ntf-btn" data-n="push-on">চালু করুন</button>') + '</div>';
     }
-    h += '<div class="ntf-row"><div class="t"><b>🧪 টেস্ট</b>নিজের কাছে একটা নোটিফিকেশন পাঠিয়ে দেখুন</div><button class="ntf-btn g" data-n="test">পাঠান</button></div>';
-    h += '<div class="ntf-msg' + (S.msg && S.msg[1] ? ' ' + S.msg[1] : '') + '" id="ntfMsg">' + esc(S.msg ? S.msg[0] : '') + '</div>';
+    h += '<div class="ntf-row"><div class="ntf-t"><b>🧪 টেস্ট</b>নিজের কাছে একটা নোটিফিকেশন পাঠিয়ে দেখুন</div><button class="ntf-btn ntf-g" data-n="test">পাঠান</button></div>';
+    h += '<div class="ntf-msg' + (S.msg && S.msg[1] ? ' ntf-' + S.msg[1] : '') + '" id="ntfMsg">' + esc(S.msg ? S.msg[0] : '') + '</div>';
 
     if (!c) return h + '<div class="ntf-msg">⏳ লোড হচ্ছে…</div></div></div>';
 
     if (c.devices && c.devices.length) {
       h += '<h4>Push পাওয়া ডিভাইস</h4>' + c.devices.map(function (d) {
-        return '<div class="ntf-row"><div class="t"><b>' + esc(d.dev || 'ডিভাইস') + (d.me ? ' · এটি' : '') + '</b>' +
+        return '<div class="ntf-row"><div class="ntf-t"><b>' + esc(d.dev || 'ডিভাইস') + (d.me ? ' · এটি' : '') + '</b>' +
           (d.n ? esc(d.n) + ' · ' : '') + 'চালু ' + ago(d.at) + '</div>' +
           '<button class="ntf-ib" data-n="rm" data-id="' + esc(d.id) + '" title="সরান">' + ICO.x + '</button></div>';
       }).join('');
     }
     if (c.owner) {
       if (O.ext) {
-        h += '<h4>' + esc(O.ext) + '</h4><div class="ntf-row"><div class="t"><b>সতর্কবার্তা ' + esc(O.ext) + '-এও যাবে</b>' +
+        h += '<h4>' + esc(O.ext) + '</h4><div class="ntf-row"><div class="ntf-t"><b>সতর্কবার্তা ' + esc(O.ext) + '-এও যাবে</b>' +
           'বন্ধ করলে শুধু অ্যাপে আর Push-এ আসবে। লগইন কোড আর রিপোর্টের ইমেইল আগের মতোই যাবে।</div>' +
-          '<button class="ntf-sw' + (c.ext ? ' on' : '') + '" data-n="ext" aria-label="চালু/বন্ধ"></button></div>';
+          '<button class="ntf-sw' + (c.ext ? ' ntf-act' : '') + '" data-n="ext" aria-label="চালু/বন্ধ"></button></div>';
       }
-      h += '<h4>Push সার্ভার (Firebase)</h4><div class="ntf-row"><div class="t"><b>' +
+      h += '<h4>Push সার্ভার (Firebase)</h4><div class="ntf-row"><div class="ntf-t"><b>' +
         (c.ready ? '✅ চালু' : '⚪ সেট করা নেই') + '</b>' +
         (c.ready ? 'Project: ' + esc(c.project || '') : 'Firebase-এর service account ফাইল (.json) দিন') + '</div>' +
-        '<button class="ntf-btn g" data-n="key">' + (c.ready ? 'বদলান' : 'ফাইল দিন') + '</button></div>' +
+        '<button class="ntf-btn ntf-g" data-n="key">' + (c.ready ? 'বদলান' : 'ফাইল দিন') + '</button></div>' +
         '<input type="file" accept=".json,application/json" class="ntf-file" id="ntfKey">';
     }
     return h + '</div></div>';
@@ -373,7 +373,7 @@
   function msg(s, kind) {
     S.msg = s ? [s, kind || ''] : null;
     var m = R && $('#ntfMsg', R);
-    if (m) { m.textContent = s || ''; m.className = 'ntf-msg' + (kind ? ' ' + kind : ''); }
+    if (m) { m.textContent = s || ''; m.className = 'ntf-msg' + (kind ? ' ntf-' + kind : ''); }
   }
   function busyBtn(b, on, label) {
     if (!b) return;
@@ -418,12 +418,12 @@
     }, function (e) { busyBtn(b, false); msg(errMsg(e), 'e'); });
   }
   function setExt(b) {
-    var on = !b.classList.contains('on');
-    b.classList.toggle('on', on);
+    var on = !b.classList.contains('ntf-act');
+    b.classList.toggle('ntf-act', on);
     call('ext', { on: on }).then(function (r) {
       if (S.cfg) S.cfg.ext = r.ext;
       msg(r.ext ? '✅ সতর্কবার্তা ' + O.ext + '-এও যাবে' : '✅ এখন থেকে সতর্কবার্তা শুধু অ্যাপে আর Push-এ', 'o');
-    }, function (e) { b.classList.toggle('on', !on); msg(errMsg(e), 'e'); });
+    }, function (e) { b.classList.toggle('ntf-act', !on); msg(errMsg(e), 'e'); });
   }
   function removeDev(b) {
     var id = b.getAttribute('data-id');
@@ -499,11 +499,11 @@
     t.innerHTML = '<div class="ntf-ic" style="--kc:' + s.col + '">' + esc(s.ic) + '</div><div class="ntf-tx"><div class="ntf-ti">' + esc(s.ti) +
       (n > 1 ? ' <span style="color:var(--nm);font-weight:600">+' + bn(n - 1) + '</span>' : '') + '</div>' +
       (x.b ? '<div class="ntf-b">' + esc(x.b) + '</div>' : '') + '</div>';
-    requestAnimationFrame(function () { t.classList.add('on'); });
+    requestAnimationFrame(function () { t.classList.add('ntf-show'); });
     clearTimeout(toastT);
     toastT = setTimeout(hideToast, 6500);
   }
-  function hideToast() { if (R) $('.ntf-toast', R).classList.remove('on'); }
+  function hideToast() { if (R) $('.ntf-toast', R).classList.remove('ntf-show'); }
 
   /* ---------------- Push ---------------- */
   function canPush() {
