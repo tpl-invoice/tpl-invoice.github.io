@@ -426,6 +426,8 @@ a.act{text-decoration:none;color:inherit}
   .sb-brand{display:flex;align-items:center;gap:11px;padding:4px 6px 18px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
   .sb-mono{width:42px;height:42px;border-radius:13px;flex:none;display:grid;place-items:center;font-family:var(--num);font-weight:700;
     font-size:15px;letter-spacing:.04em;color:#fff;background:linear-gradient(135deg,#d4b483,#b08d57);box-shadow:0 6px 16px rgba(176,141,87,.35)}
+  .sb-mono.has-logo{background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.28);padding:4px;overflow:hidden}
+  .sb-mono.has-logo img{max-width:100%;max-height:100%;object-fit:contain;display:block}
   .sb-names{min-width:0}
   .sb-names b{display:block;font-size:15px;line-height:1.25;color:#fff;font-weight:700}
   .sb-names span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#d4b483;font-family:var(--num);font-weight:600;margin-top:2px}
@@ -921,6 +923,21 @@ const mLabel = k => { const [y, m] = k.split("-"); return `${BN_M[+m - 1]} ${y.s
 const today = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
 const daysSince = s => s ? Math.round((today() - parse(s)) / 864e5) : null;
 const agoText = n => n === null ? "কখনো না" : n <= 0 ? "আজ" : n === 1 ? "গতকাল" : `${n} দিন আগে`;
+// সাইডবারের মাথায় প্রতিষ্ঠানের logo (সেটিংসের Logo — Invoice-এ যেটা ছাপা হয়)। না থাকলে বা লোড না হলে নামের আদ্যক্ষর।
+function setSideLogo() {
+  const box = $("#sbMono");
+  const mono = String(D.company || "Technique Publication").split(/\s+/).map(w => w.charAt(0)).join("").slice(0, 2).toUpperCase();
+  const showMono = () => { box.classList.remove("has-logo"); box.textContent = mono; };
+  if (!D.logo) return showMono();
+  const cur = box.querySelector("img");
+  if (cur && cur.getAttribute("src") === D.logo) return;
+  const img = new Image();
+  img.alt = D.company || "logo";
+  img.onload = () => { box.textContent = ""; box.appendChild(img); box.classList.add("has-logo"); };
+  img.onerror = showMono;
+  if (!cur) showMono();
+  img.src = D.logo;
+}
 const initials = n => n.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 // প্রতিটা retailer-এর নিজের রং (নাম থেকে) — Invoice App-এর একই রং, তাই দুই জায়গায় একই দোকান একই রঙে
 const AV_COLORS = [["#4263eb", "#3b5bdb"], ["#0c8599", "#0b7285"], ["#2f9e44", "#2b8a3e"], ["#e8590c", "#d9480f"],
@@ -1127,7 +1144,7 @@ function render() {
   if (!D) return;
   $("#company").textContent = (D.company || "Technique Publication") + " · Retailer Invoice";
   $("#sbCo").textContent = D.company || "Technique Publication";
-  $("#sbMono").textContent = String(D.company || "Technique Publication").split(/\s+/).map(w => w.charAt(0)).join("").slice(0, 2).toUpperCase();
+  setSideLogo();
   $("#updated").textContent = D.refreshedAt ? `শেষ হালনাগাদ: ${D.refreshedAt}` : "";
   $("#sbUpdated").textContent = D.refreshedAt ? `শেষ হালনাগাদ: ${D.refreshedAt}` : "";
   $("#viewTitle").textContent = VIEW_TITLES[S.view];
