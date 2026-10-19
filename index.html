@@ -30,6 +30,7 @@ var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-dashboard.png">
 <link rel="apple-touch-icon" href="icon-dashboard.png">
+<script src="ntf.js"></script>
 
 <base target="_top">
 <meta charset="utf-8">
@@ -79,6 +80,7 @@ input,select{font:inherit;color:inherit}
 .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.6);font-family:var(--num);font-weight:600}
 .title{font-family:'Playfair Display',var(--font);font-size:24px;margin:2px 0 0;font-weight:600}
 .icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.1);color:#fff;transition:background .2s}
+html:not(.ntf-on) [data-ntf-bell]{display:none!important} /* 🔔 শুধু GitHub সাইটে (ntf.js) */
 .icon-btn:hover{background:rgba(255,255,255,.18)}
 .icon-btn svg{width:20px;height:20px}
 .inv-app{width:auto;padding:0 12px;gap:6px;display:flex;align-items:center;font-size:13px;font-weight:600;text-decoration:none;background:var(--accent);color:#fff}
@@ -745,6 +747,9 @@ a.act{text-decoration:none;color:inherit}
         <button class="icon-btn" data-view="manage" aria-label="ম্যানেজ" title="ম্যানেজ — Retailer, বই, Discount, Staff, সেটিংস, টুলস">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+        <button class="icon-btn" data-ntf-bell aria-label="নোটিফিকেশন">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        </button>
         <button class="icon-btn" id="themeBtn" aria-label="Theme">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </button>
@@ -851,6 +856,13 @@ a.act{text-decoration:none;color:inherit}
 <script>
 /* ═══════════════ Helpers ═══════════════ */
 const $ = s => document.querySelector(s);
+// 🔔 নোটিফিকেশন — GitHub সাইটে ntf.js থাকে (window.NTF); Apps Script-এর পাতায় ঘণ্টা দেখায় না।
+// staff-এর নতুন invoice আর বারবার ভুল PIN/password-এর খবর। সার্ভার: WebApi.js ntfApi (মালিকের password সহ)।
+if (window.NTF) NTF.init({
+  app: "inv", name: "Retailer Invoice", ext: false, sw: "ntf-sw.js", scope: "./",
+  call: (op, arg) => new Promise((res, rej) =>
+    google.script.run.withSuccessHandler(res).withFailureHandler(rej).ntfApi(op, arg, ownerKey()))
+});
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 // Dashboard password — "Anyone" লিংকে সার্ভার এটা দিয়েই মালিককে চেনে; প্রতিটা ডাকে পাঠাই, এই ফোনে একবার দিলেই মনে থাকে
 function ownerKey() { try { return localStorage.getItem("owner-key") || ""; } catch (e) { return ""; } }
@@ -1100,6 +1112,7 @@ function load(refresh) {
       btn.classList.remove("spin");
       useData(typeof json === "string" ? JSON.parse(json) : json);
       showApp();
+      if (window.NTF) NTF.start();   // password ঠিক আছে — এবার নোটিফিকেশন
       if (refresh) toast("✓ হালনাগাদ হয়েছে");
     } catch (err) {
       fail("ডাটা দেখাতে সমস্যা: " + err.message);
