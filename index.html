@@ -464,10 +464,14 @@ a.act{text-decoration:none;color:inherit}
   .mg-nav{display:none !important}
   .side > *{flex-shrink:0}   /* ছোট স্ক্রিনে মেনু চেপে না কেটে, পুরো সাইডবার স্ক্রল হয় */
   .sb-chev{margin-left:auto;width:15px !important;height:15px !important;opacity:.55 !important;transition:transform .25s}
-  body.in-manage .sb-it[data-view="manage"] .sb-chev{transform:rotate(180deg)}
+  body.in-manage:not(.mg-fold) .sb-it[data-view="manage"] .sb-chev{transform:rotate(180deg)}
+  .side{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
+  .side::-webkit-scrollbar{width:6px}
+  .side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:6px}
+  .side::-webkit-scrollbar-track{background:transparent}
   .sb-sub{overflow:hidden;max-height:0;opacity:0;margin:0 0 0 22px;padding-left:10px;border-left:1px dashed rgba(255,255,255,.14);
     transition:max-height .3s ease,opacity .2s ease,margin .2s ease}
-  body.in-manage .sb-sub{max-height:360px;opacity:1;margin:4px 0 6px 22px}
+  body.in-manage:not(.mg-fold) .sb-sub{max-height:360px;opacity:1;margin:4px 0 6px 22px}
   .sb-subit{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:9px;font-size:13.5px;font-weight:500;
     color:rgba(223,228,243,.7);text-align:left;transition:background .15s,color .15s}
   .sb-subit svg{width:16px;height:16px;flex:none;opacity:.8}
@@ -2437,7 +2441,7 @@ document.addEventListener("click", e => {
   // সাইডবারের ম্যানেজ-অংশ — অন্য পাতা থেকে চাপলে আগে ম্যানেজ খোলে, তারপর সেই অংশ
   if (d.sbmg) {
     window.scrollTo({ top: 0 });
-    if (S.view !== "manage") { MG.sec = d.sbmg; store.set("rd-mg", d.sbmg); S.view = "manage"; render(); }
+    if (S.view !== "manage") { MG.sec = d.sbmg; store.set("rd-mg", d.sbmg); S.view = "manage"; document.body.classList.remove("mg-fold"); render(); }
     else mgShow(d.sbmg);
     return;
   }
@@ -2570,7 +2574,12 @@ document.addEventListener("click", e => {
     S.period = ds.period; render();
   }
   else if (ds.type) { S.type = ds.type; render(); }
-  else if (ds.view) { S.view = ds.view; S.iLimit = 40; window.scrollTo({ top: 0 }); render(); }
+  else if (ds.view) {
+    // ম্যানেজে থেকেই সাইডবারের ম্যানেজ (বা তার তীর) চাপলে শুধু সাব-মেনু ভাঁজ/খোলা — পাতা একই থাকে
+    if (ds.view === "manage" && S.view === "manage" && el.classList.contains("sb-it")) { document.body.classList.toggle("mg-fold"); return; }
+    document.body.classList.remove("mg-fold");   // অন্য পাতা থেকে ম্যানেজে এলে সাব-মেনু খোলা অবস্থায়
+    S.view = ds.view; S.iLimit = 40; window.scrollTo({ top: 0 }); render();
+  }
   else if (ds.sort) { S.rSort = ds.sort; render(); }
   else if (ds.toggle !== undefined) el.parentElement.classList.toggle("open");
   else if (ds.retailer !== undefined) showRetailer(+ds.retailer);
