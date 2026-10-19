@@ -978,6 +978,43 @@ const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
+/* ═══ 🖨 সরাসরি Print — Drive-এ সেভ থাকা PDF-টাই, নতুন ট্যাব/Download ছাড়া প্রিন্টের ডায়ালগ ═══ */
+function printPdf(link, btn) {
+  if (!link) return;
+  // ফোনের ব্রাউজার পাতার ভেতরে PDF দেখাতে পারে না — তখন PDF খুলে দিই, সেখান থেকে ⋮ → Print
+  if (navigator.pdfViewerEnabled === false || !(window.google && google.script && google.script.run)) {
+    window.open(link, "_blank");
+    toast("PDF খুলছে — সেখান থেকে ⋮ → Print দিন");
+    return;
+  }
+  if (btn) { if (btn.dataset.busy) return; btn.dataset.busy = "1"; btn.dataset.lbl = btn.innerHTML; btn.innerHTML = "⏳ প্রিন্ট…"; }
+  const done = () => { if (btn) { btn.innerHTML = btn.dataset.lbl; delete btn.dataset.busy; } };
+  const ok = b64 => { done(); printBlob_(b64, link); };
+  const fail = err => { done(); if (needKey(err, () => printPdf(link, btn))) return; toast("❌ " + (err && err.message || err)); };
+  google.script.run.withSuccessHandler(ok).withFailureHandler(fail).pdfForPrint(link, ownerKey());
+}
+function printBlob_(b64, link) {
+  const bin = atob(b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u8], { type: "application/pdf" }));
+  const old = document.getElementById("printFrame"); if (old) old.remove();
+  const f = document.createElement("iframe");
+  f.id = "printFrame";
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+  f.onload = () => setTimeout(() => {
+    try { f.contentWindow.focus(); f.contentWindow.print(); }
+    catch (e) { window.open(link, "_blank"); }
+  }, 400);
+  f.src = url;
+  document.body.appendChild(f);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-print]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  printPdf(b.dataset.print, b);
+}, true);
+
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("on");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2600);
@@ -1688,6 +1725,7 @@ function makeStatementNow() {
       <div class="result-links">
         <a class="big-link pdf" href="${esc(r.url)}" target="_blank">PDF খুলুন</a>
         ${r.download ? `<a class="big-link dl" href="${esc(r.download)}" target="_blank">⬇ PDF Download</a>` : ""}
+        <button class="big-link dl" data-print="${esc(r.url || r.download)}">🖨 Print</button>
         <a class="big-link wa" href="${esc(r.wa)}" target="_blank">WhatsApp-এ পাঠান</a>
       </div>`;
   };
@@ -1972,6 +2010,7 @@ function confirmInvoice() {
       <div class="result-links">
         ${r.url ? `<a class="big-link pdf" href="${esc(r.url)}" target="_blank">PDF দেখুন</a>` : `<div class="empty">PDF হয়নি — Master-এর System Log দেখুন</div>`}
         ${r.download ? `<a class="big-link dl" href="${esc(r.download)}" target="_blank">⬇ PDF Download</a>` : ""}
+        ${r.url || r.download ? `<button class="big-link dl" data-print="${esc(r.url || r.download)}">🖨 Print</button>` : ""}
         <a class="big-link wa" href="${esc(r.wa)}" target="_blank">WhatsApp-এ পাঠান</a>
       </div>`;
     $("#sheetFoot").innerHTML = `<button class="btn ghost" id="sheetDone">বন্ধ</button><button class="btn primary" id="invAgain">আরেকটা Invoice</button>`;
@@ -2299,7 +2338,7 @@ function mgStaffHtml() {
     <div class="card"><div class="list">${d.log.length ? d.log.map(l => `
       <div class="row" style="cursor:default"><div class="main"><div class="t1">${esc(l.staff)} · ${esc(l.retailer)}</div>
         <div class="t2">${esc(l.inv)} · ${esc(l.type)} · ${esc(l.time)}</div></div>
-        <div class="end"><div class="t1 num">${tk(l.total)}</div>${l.pdf ? `<a class="t2" href="${esc(l.pdf)}" target="_blank">PDF</a>` : ""}</div></div>`).join("")
+        <div class="end"><div class="t1 num">${tk(l.total)}</div>${l.pdf ? `<a class="t2" href="${esc(l.pdf)}" target="_blank">PDF</a> · <a class="t2" href="#" data-print="${esc(l.pdf)}">Print</a>` : ""}</div></div>`).join("")
       : `<div class="empty">এখনো কিছু নেই</div>`}</div></div>`;
 }
 function mgStaffRows() {
