@@ -60,6 +60,8 @@ var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT
 [hidden]{display:none !important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
 body{padding-bottom:calc(96px + var(--safe-b))}
+.dev-foot{text-align:center;font-size:11.5px;color:var(--ink-3);padding:18px 12px 6px}.dev-foot b{color:var(--ink-2);font-weight:700}
+@media print{.dev-foot{display:none}}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 input{font:inherit;color:inherit}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums}
@@ -529,6 +531,7 @@ html.sticky{scroll-padding-top:var(--stickh,320px)}
 <main class="wrap" id="app">
   <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
 </main>
+<footer class="dev-foot">Developed By: <b>Md. Ashraful Islam</b></footer>
 
 <footer class="dock" id="dock" hidden>
   <div class="wrap">

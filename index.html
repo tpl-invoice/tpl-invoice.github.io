@@ -68,6 +68,12 @@ var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT
 [hidden]{display:none !important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
 body{padding-bottom:calc(78px + var(--safe-b));overflow-x:hidden}
+/* ডেভেলপারের নাম — ফোনে পাতার একদম নিচে; কম্পিউটারে সাইডবারের নিচে (sb-dev) */
+.dev-foot{text-align:center;font-size:11.5px;color:var(--ink-3);padding:18px 12px 6px}
+.dev-foot b{color:var(--ink-2,var(--ink));font-weight:700}
+.sb-dev{margin-top:6px}.sb-dev b{color:rgba(223,228,243,.85);font-weight:700}
+@media (min-width:1024px){ .dev-foot{display:none} }
+@media print{ .dev-foot{display:none} }
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 input,select{font:inherit;color:inherit}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -729,6 +735,7 @@ a.act{text-decoration:none;color:inherit}
   <div class="sb-foot">
     <div class="sb-upd" id="sbUpdated"></div>
     <div>Technique Publication · Retailer Invoice</div>
+    <div class="sb-dev">Developed By: <b>Md. Ashraful Islam</b></div>
   </div>
 </aside>
 
@@ -799,6 +806,7 @@ a.act{text-decoration:none;color:inherit}
   <section class="view" id="v-invoices"></section>
   <section class="view" id="v-manage"></section>
 </main>
+<footer class="dev-foot">Developed By: <b>Md. Ashraful Islam</b></footer>
 
 <button class="fab" id="payFab" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>নতুন
