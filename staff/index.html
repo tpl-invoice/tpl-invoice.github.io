@@ -428,21 +428,38 @@ function load(pin) {
   if (go) { go.disabled = true; go.textContent = "Logging In…"; }
   const fail = err => {
     const m = String(err && err.message || err);
-    if (/PIN|অনেকবার/.test(m)) { store.del("staff-pin"); PIN = ""; renderLogin(m); return; }
+    if (/PIN|অনেকবার/.test(m)) { store.del("staff-pin"); store.del("staff-data"); PIN = ""; renderLogin(m); return; }
     if (go) { renderLogin(m); return; }
     $("#app").innerHTML = `<div class="card empty">ডাটা আনা যায়নি<br><small>${esc(m)}</small><br><br>
       <button class="save" onclick="location.reload()" style="padding:10px 18px;font-size:14px">আবার চেষ্টা</button></div>`;
   };
-  const ok = json => {
-    D = typeof json === "string" ? JSON.parse(json) : json;
+  const use = (raw, first) => {
+    D = typeof raw === "string" ? JSON.parse(raw) : raw;
     D.products.forEach(p => { p.code = p.code || ""; p.kw = p.kw || ""; });
     PIN = pin; store.set("staff-pin", pin);
     $("#company").textContent = D.company || "Invoice";
     $("#whoName").textContent = D.staff; $("#who").hidden = false;
-    if (restoreDraft()) toast("আগের অসমাপ্ত invoice ফিরিয়ে আনা হয়েছে");
-    render();
+    if (first && restoreDraft()) toast("আগের অসমাপ্ত invoice ফিরিয়ে আনা হয়েছে");
   };
-  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(fail).getStaffData(pin);
+  // শেষবারের তালিকা (দোকান/বই) এই ফোনে — খোলামাত্র কাজ শুরু করা যায়, নতুনটা পেছনে আসে।
+  // একই PIN-এর হলেই; PIN ভুল হলে বা লগআউটে মুছে যায়।
+  const c = store.get("staff-data");
+  const cached = !!(c && c.pin === pin && c.d && hasServer());
+  if (cached) { use(c.d, true); render(); }
+  const ok = json => {
+    const raw = typeof json === "string" ? JSON.parse(json) : json;
+    store.set("staff-data", { pin: pin, d: raw });
+    use(raw, !cached);
+    // ইতিমধ্যে কাজ শুরু করলে (বই বাছাই চলছে / লিখছেন) পর্দা না বদলে শুধু তালিকা হালনাগাদ
+    const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    if (!cached || (A.step === "shop" && !typing)) render();
+  };
+  const failCached = err => {
+    const m = String(err && err.message || err);
+    if (/PIN|অনেকবার/.test(m)) { store.del("staff-data"); fail(err); return; }
+    toast("নতুন তালিকা আনা যায়নি — আগেরটা দেখাচ্ছে");
+  };
+  if (hasServer()) google.script.run.withSuccessHandler(ok).withFailureHandler(cached ? failCached : fail).getStaffData(pin);
   else setTimeout(() => ok(demoData()), 300);
 }
 
@@ -649,7 +666,7 @@ function save(items) {
     A.saving = false; updateDock();
     okBtn.disabled = false; okBtn.textContent = "✓ ঠিক আছে, Save";
     const m = String(err && err.message || err);
-    if (/PIN|অনেকবার/.test(m)) { closePreview(); store.del("staff-pin"); PIN = ""; renderLogin(m); return; }
+    if (/PIN|অনেকবার/.test(m)) { closePreview(); store.del("staff-pin"); store.del("staff-data"); PIN = ""; renderLogin(m); return; }
     toast("❌ " + m);
   };
   const ok = json => {
@@ -689,7 +706,7 @@ document.addEventListener("click", e => {
   }
   else if (b.id === "logout") {
     if (A.items.length && A.step === "items" && !confirm("লেখা invoice মুছে বের হবেন?")) return;
-    store.del("staff-pin"); store.set("staff-draft", null); PIN = "";
+    store.del("staff-pin"); store.del("staff-data"); store.set("staff-draft", null); PIN = "";
     Object.assign(A, { step: "shop", r: -1, mode: "Invoice", items: [], q: "", rq: "" });
     renderLogin("");
   }

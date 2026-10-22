@@ -856,6 +856,14 @@ a.act{text-decoration:none;color:inherit}
 <script>
 /* ═══════════════ Helpers ═══════════════ */
 const $ = s => document.querySelector(s);
+// একই HTML হলে DOM আবার বানাই না — আগের ডাটা দেখানোর পর নতুন ডাটা এলে পুরো পাতা নতুন করে আঁকা হতো,
+// ঠিক তখন চাপা বোতাম হারিয়ে যেত আর খোঁজার ঘরের লেখা/ফোকাস চলে যেত।
+function setHTML(el, html) {
+  if (!el) return false;
+  if (el.__h === html && el.innerHTML === el.__s) return false;
+  el.innerHTML = html; el.__h = html; el.__s = el.innerHTML;
+  return true;
+}
 // 🔔 নোটিফিকেশন — GitHub সাইটে ntf.js থাকে (window.NTF); Apps Script-এর পাতায় ঘণ্টা দেখায় না।
 // staff-এর নতুন invoice আর বারবার ভুল PIN/password-এর খবর। সার্ভার: WebApi.js ntfApi (মালিকের password সহ)।
 if (window.NTF) NTF.init({
@@ -1242,8 +1250,8 @@ window.addEventListener("resize", fitSticky);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSticky);
 
 function renderFilterBar() {
-  $("#periodChips").innerHTML = PERIODS.map(([k, l]) =>
-    `<button class="chip ${S.period === k ? "on" : ""}" data-period="${k}">${l}</button>`).join("");
+  setHTML($("#periodChips"), PERIODS.map(([k, l]) =>
+    `<button class="chip ${S.period === k ? "on" : ""}" data-period="${k}">${l}</button>`).join(""));
   document.querySelectorAll("#typeSeg button").forEach(b => b.classList.toggle("on", b.dataset.type === S.type));
   const n = (S.retailers.length ? 1 : 0) + (S.products.length ? 1 : 0);
   const badge = $("#fCount"); badge.hidden = !n; badge.textContent = n;
@@ -1288,7 +1296,7 @@ function renderOverview() {
     .sort((a, b) => (b.due > 0) - (a.due > 0) || (b.days ?? 999) - (a.days ?? 999) || b.due - a.due)
     .slice(0, 5);
 
-  $("#v-overview").innerHTML = `
+  setHTML($("#v-overview"), `
     <div class="hero">
       <div class="label">মোট বিক্রি · ${esc(periodText())}</div>
       <div class="big num">${tk(cur.amt)}</div>
@@ -1319,7 +1327,7 @@ function renderOverview() {
     <div class="grid ov-grid" style="margin-top:12px">
       <div class="card"><h3>শীর্ষ Retailer <small>বিক্রি</small></h3>${barList(topR.map(([i, v]) => ({ name: D.retailers[i].name, val: v, label: tk(v), attr: `data-retailer="${i}"` })))}</div>
       <div class="card"><h3>শীর্ষ বই <small>কপি</small></h3>${barList(topP.map(([i, v]) => ({ name: D.products[i].name, val: v, label: nf(v) + " কপি", attr: `data-product="${i}"` })))}</div>
-    </div>`;
+    </div>`);
 
   drawTrend(sales);
 }
@@ -1421,7 +1429,7 @@ function renderRetailers(listOnly) {
     }).join("") : `<div class="card empty">কোনো retailer পাওয়া যায়নি</div>`}</div>`;
 
   if (listOnly && $("#rList")) { $("#rList").innerHTML = cards; return; }
-  $("#v-retailers").innerHTML = `
+  setHTML($("#v-retailers"), `
     <div class="toolbar">
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="rQ" placeholder="Retailer খুঁজুন…" value="${esc(S.rQ)}"></label>
@@ -1429,7 +1437,7 @@ function renderRetailers(listOnly) {
         ${[["sales", "বিক্রি"], ["due", "বাকি"], ["idle", "নিষ্ক্রিয়"], ["name", "নাম"]].map(([k, l]) => `<button data-sort="${k}" class="${S.rSort === k ? "on" : ""}">${l}</button>`).join("")}
       </div>
     </div>
-    <div id="rList">${cards}</div>`;
+    <div id="rList">${cards}</div>`);
 }
 const compactTk = n => Math.abs(n) >= 1e5 ? "৳" + compact(n) : tk(n);
 
@@ -1462,7 +1470,7 @@ function renderProducts(listOnly) {
       </div></div>`;
 
   if (listOnly && $("#pList")) { $("#pList").innerHTML = body; return; }
-  $("#v-products").innerHTML = `
+  setHTML($("#v-products"), `
     <div class="toolbar">
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="pQ" placeholder="বই খুঁজুন…" value="${esc(S.pQ)}"></label>
@@ -1473,7 +1481,7 @@ function renderProducts(listOnly) {
         ${D.retailers.map(r => `<option value="${esc(r.name)}" ${S.retailers.length === 1 && S.retailers[0] === r.name ? "selected" : ""}>${esc(r.name)}</option>`).join("")}
       </select>
     </div>
-    <div id="pList">${body}</div>`;
+    <div id="pList">${body}</div>`);
 }
 
 /* ── Invoices ── */
@@ -1518,12 +1526,12 @@ function renderInvoices(listOnly) {
     ${list.length > S.iLimit ? `<button class="more" id="moreInv">আরও দেখুন (${list.length - S.iLimit})</button>` : ""}`;
 
   if (listOnly && $("#iList")) { $("#iList").innerHTML = body; return; }
-  $("#v-invoices").innerHTML = `
+  setHTML($("#v-invoices"), `
     <div class="toolbar">
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="iQ" placeholder="Invoice no, retailer বা বই…" value="${esc(S.iQ)}"></label>
     </div>
-    <div id="iList">${body}</div>`;
+    <div id="iList">${body}</div>`);
 }
 
 /* ═══════════════ Sheet ═══════════════ */
