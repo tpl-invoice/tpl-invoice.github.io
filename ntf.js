@@ -128,7 +128,10 @@
     '.ntf-ib{width:34px;height:34px;border-radius:10px;border:0;background:transparent;color:var(--ni2);display:grid;place-items:center;cursor:pointer;font-size:16px}',
     '.ntf-ib:hover{background:var(--ns);color:var(--ni)}',
     '.ntf-ib svg{width:18px;height:18px}',
-    '.ntf-body{overflow-y:auto;flex:1;min-height:120px;overscroll-behavior:contain}',
+    // .ntf-in must be a flex column capped by the panel, otherwise .ntf-body grows to full height and nothing scrolls
+    '.ntf-in{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}',
+    '.ntf-hd,.ntf-cta,.ntf-ft,.ntf-grab{flex:none}',
+    '.ntf-body{overflow-y:auto;flex:1 1 auto;min-height:120px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}',
     '.ntf-cta{margin:0 14px 10px;padding:11px 12px;border-radius:13px;background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(217,70,239,.10));display:flex;gap:10px;align-items:center}',
     '.ntf-cta .ntf-t{flex:1;font-size:13px;color:var(--ni2)}.ntf-cta .ntf-t b{display:block;color:var(--ni);font-size:13.5px}',
     '.ntf-btn{border:0;border-radius:10px;padding:8px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:var(--nbr);color:#fff;white-space:nowrap}',
