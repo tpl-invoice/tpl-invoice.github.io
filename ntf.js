@@ -149,6 +149,8 @@
     '.ntf-it.ntf-x .ntf-b{display:block;-webkit-line-clamp:unset}',
     '.ntf-tm{color:var(--nm);font-size:11.5px;margin-top:4px;display:flex;gap:10px;align-items:center}',
     '.ntf-tm a{color:var(--nbr);font-weight:700;text-decoration:none}',
+    // কোন অ্যাপের (Work Hub-এ সব অ্যাপের বিজ্ঞপ্তি একসাথে আসে — x.a = অ্যাপের নাম, x.ac = রং)
+    '.ntf-ap{font-weight:700;font-size:10.5px;padding:1px 7px;border-radius:99px;color:#fff;background:var(--ac,#4f46e5)}',
     '.ntf-empty{text-align:center;padding:38px 20px 44px;color:var(--nm)}',
     '.ntf-empty div{font-size:38px;margin-bottom:6px}',
     '.ntf-empty b{display:block;color:var(--ni);font-size:15px;margin-bottom:2px}',
@@ -305,7 +307,7 @@
       '<div class="ntf-ic" style="--kc:' + s.col + '">' + esc(s.ic) + '</div>' +
       '<div class="ntf-tx"><div class="ntf-ti">' + esc(s.ti) + '</div>' +
       (x.b ? '<div class="ntf-b">' + esc(x.b) + '</div>' : '') +
-      '<div class="ntf-tm"><span>' + ago(x.t) + '</span>' +
+      '<div class="ntf-tm">' + (x.a ? '<span class="ntf-ap" style="--ac:' + esc(x.ac || '') + '">' + esc(x.a) + '</span>' : '') + '<span>' + ago(x.t) + '</span>' +
       (x.u ? '<a href="' + esc(x.u) + '" target="_blank" rel="noopener" data-n="link">খুলুন ›</a>' : '') + '</div></div></div>';
   }
 

@@ -1042,6 +1042,30 @@ document.addEventListener("click", e => {
   e.preventDefault(); e.stopPropagation();
   printPdf(b.dataset.print, b);
 }, true);
+// আগের invoice-এর কার্ড থেকে Print — লিংক জানা নেই, সার্ভার নাম দেখে Drive থেকে শেষ (সংশোধিত হলে সেটাই) PDF আনে
+function printInvoice(b) {
+  if (b.dataset.busy) return;
+  const phone = navigator.pdfViewerEnabled === false || !(window.google && google.script && google.script.run);
+  const lbl = b.innerHTML;
+  b.dataset.busy = "1"; b.innerHTML = "⏳ প্রিন্ট…";
+  // ফোনে ট্যাব এখনই খুলি — উত্তর আসার পরে খুললে ব্রাউজার popup ভেবে আটকে দেয়
+  const w = phone ? window.open("", "_blank") : null;
+  const done = () => { b.innerHTML = lbl; delete b.dataset.busy; };
+  const fail = err => { done(); if (w) w.close(); if (needKey(err, () => printInvoice(b))) return; toast("❌ " + (err && err.message || err)); };
+  google.script.run.withFailureHandler(fail).withSuccessHandler(s => {
+    done();
+    const r = JSON.parse(s);
+    if (r.b64) return printBlob_(r.b64, r.url);
+    if (w) w.location.href = r.url; else window.open(r.url, "_blank");
+    toast("PDF খুলছে — সেখান থেকে ⋮ → Print দিন");
+  }).invoicePdfForPrint(D.retailers[+b.dataset.invprint].name, b.dataset.no, b.dataset.date, !phone, ownerKey());
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-invprint]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  printInvoice(b);
+}, true);
 
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("on");
@@ -1517,6 +1541,7 @@ function invoiceCards(list) {
       <div class="inv-lines">${g.lines.map(s => `
         <div class="line"><div class="ln">${esc(D.products[s[3]].name)}<small class="num">${nf(s[4])} × ${tk(s[5] * (1 - s[6]))} · ${(s[6] * 100).toFixed(0)}% ছাড়</small></div><div class="num" style="font-weight:600">${tk(s[7])}</div></div>`).join("")}
         ${g.no.indexOf("ARCHIVE-") === 0 ? "" : `<div class="inv-acts">
+          <button class="act" data-invprint="${g.r}" data-no="${esc(g.no)}" data-date="${esc(g.date || "")}">🖨 Print</button>
           <button class="act" data-invedit="${g.r}" data-no="${esc(g.no)}">✏️ সংশোধন</button>
           <button class="act danger" data-invvoid="${g.r}" data-no="${esc(g.no)}">✕ বাতিল</button></div>`}
       </div></div>`;
