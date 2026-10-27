@@ -39,7 +39,7 @@ var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- font আর chart পেছনে লোড হয় — এগুলোর জন্য পাতা দেখাতে দেরি হয় না -->
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onload="chartReady()"></script>
 <style>
 :root{
@@ -562,7 +562,7 @@ body.se-open{overflow:hidden}
   .se-lang{flex:1 1 100%}
 }
 /* কাগজ — প্রিভিউ, প্রিন্ট আর PDF একই (তাই রং সবসময় হালকা পাতার মতো, থিম যাই হোক) */
-.stp{position:relative;color:#16181d;background:#fff;font-family:"Hind Siliguri","Inter",sans-serif;line-height:1.38;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.stp{position:relative;color:#16181d;background:#fff;font-family:"Times New Roman",Tinos,"Hind Siliguri",serif;line-height:1.38;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .stp *{box-sizing:border-box}
 .stp-head{display:grid;grid-template-columns:110px 1fr 110px;align-items:center;gap:10px;margin-bottom:4px}
 .stp-head img{max-height:68px;max-width:110px;object-fit:contain;display:block}
@@ -2342,7 +2342,7 @@ function sePrint() {
   const css = document.createElement("style");
   css.id = "sePrintCss";
   css.textContent = `@page{size:A4 ${land ? "landscape" : "portrait"};margin:12mm 10mm 14mm;
-    @bottom-center{content:"${SE.no ? SE.no + "  ·  " : ""}Page " counter(page) " of " counter(pages);font:8pt Inter,sans-serif;color:#888}}`;
+    @bottom-center{content:"${SE.no ? SE.no + "  ·  " : ""}Page " counter(page) " of " counter(pages);font:8pt "Times New Roman",Tinos,serif;color:#888}}`;
   const box = document.createElement("div");
   box.id = "stPrint";
   box.innerHTML = sePaper();
@@ -2402,7 +2402,7 @@ async function seMakePdf() {
         pdf.addImage(seImgs.wm, (seImgs.wm.match(/^data:image\/(\w+)/) || [, "PNG"])[1].toUpperCase().replace("JPG", "JPEG"), (W - w) / 2, (H - h) / 2, w, h, "stwm", "FAST"); // একই নাম — ছবি একবারই PDF-এ থাকে
         pdf.restoreGraphicsState();
       }
-      pdf.setFontSize(8); pdf.setTextColor(140);
+      pdf.setFont("times", "normal"); pdf.setFontSize(8); pdf.setTextColor(140);
       pdf.text(`${SE.no ? SE.no + "  ·  " : ""}Page ${i} of ${n}`, W / 2, H - 6, { align: "center" });
     }
     return pdf;
