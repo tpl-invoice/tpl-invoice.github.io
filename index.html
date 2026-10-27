@@ -501,7 +501,9 @@ body.se-open{overflow:hidden}
 .se-top{display:flex;align-items:center;gap:10px;padding:10px 14px calc(10px);padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
 .se-top h2{font-size:16px;margin:0;flex:1;min-width:160px;line-height:1.3}
 .se-top h2 small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
-.se-acts{display:flex;gap:6px;flex-wrap:wrap}
+.se-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.se-lang{flex:none}
+.se-lang button{padding:7px 10px}
 .se-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .se-btn:hover{border-color:var(--ink-3)}
 .se-btn:disabled{opacity:.6}
@@ -557,6 +559,7 @@ body.se-open{overflow:hidden}
   .se-prev{padding:12px 8px 40px}
   .se-acts{width:100%}
   .se-acts .se-btn{flex:1;padding:9px 6px;font-size:13px}
+  .se-lang{flex:1 1 100%}
 }
 /* কাগজ — প্রিভিউ, প্রিন্ট আর PDF একই (তাই রং সবসময় হালকা পাতার মতো, থিম যাই হোক) */
 .stp{position:relative;color:#16181d;background:#fff;font-family:"Hind Siliguri","Inter",sans-serif;line-height:1.38;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1983,7 +1986,7 @@ function stDefault(kind) {
     actPos: "right",
     cols: all ? { shops: cols(Object.keys(ST_KIND.shops)), months: cols(Object.keys(ST_KIND.months)) }
               : { table: cols(Object.keys(ST_KIND.table)) },
-    st: { lang: "both", size: 10.5, accent: ST_COLORS[0], zebra: true, logo: true, qr: true, address: true, wm: true,
+    st: { lang: "en", size: 10.5, accent: ST_COLORS[0], zebra: true, logo: true, qr: true, address: true, wm: true,
           orient: "portrait", openRow: true, totalRow: true }
   };
 }
@@ -2040,8 +2043,9 @@ function sePaper(forPdf) {
   const info = () => {
     const val = {
       retailer: `<b>${esc(d.retailer || "")}</b>`, account: esc(d.account || ""), phone: esc(d.phone || ""),
-      company: `<b>${esc(d.company)}</b>`, accounts: esc(`${(d.shops || []).length} retailer`), currency: "BDT (৳)",
-      no: `<b>${esc(SE.no || d.nextNo || "")}</b>`, period: esc(d.period), generated: esc(d.now)
+      company: `<b>${esc(d.company)}</b>`, currency: "BDT (৳)",
+      accounts: esc(seLang() === "bn" ? `${(d.shops || []).length}টি দোকান` : `${(d.shops || []).length} retailer${(d.shops || []).length === 1 ? "" : "s"}`),
+      no: `<b>${esc(SE.no || d.nextNo || "")}</b>`, period: esc(seLang() === "bn" ? d.period : d.period.replace("শুরু", "Beginning")), generated: esc(d.now)
     };
     const side = s => L.info.filter(x => x.on && x.side === s)
       .map(x => `<div><span class="k">${lbl(x, ST_TXT.info[x.k])}:</span> ${val[x.k]}</div>`).join("");
@@ -2179,6 +2183,8 @@ function seRender() {
       <button class="se-btn ic" data-se-close aria-label="বন্ধ">✕</button>
       <h2>${esc(name)}<small>${esc(d.period)} · ${SE.kind === "all" ? "মোট পাওনা" : "শেষ বাকি"} ${esc(seBal(d.closing))}</small></h2>
       <div class="se-acts">
+        <div class="se-seg se-lang">${[["en", "English"], ["bn", "বাংলা"], ["both", "দুই ভাষা"]].map(([v, l]) =>
+          `<button data-se-st="lang:${v}" class="${SE.L.st.lang === v ? "on" : ""}">${l}</button>`).join("")}</div>
         <button class="se-btn ${dirty ? "warn" : ""}" id="seSave">${dirty ? "● সাজানো সেভ" : "✓ সাজানো সেভ"}</button>
         <button class="se-btn" id="sePrint">🖨 প্রিন্ট</button>
         <button class="se-btn" id="seDl">⬇ PDF</button>
@@ -2253,7 +2259,7 @@ function seCtl() {
         ${c.on ? `<div class="se-sub"><input class="se-in" data-se-lbl="cols.${key}:${i}" value="${esc(c.label || "")}" placeholder="কলামের নাম: ${esc(seT(ST_TXT[key][c.k]))}"></div>` : ""}`).join("")).join("") +
       `<p class="se-help">কলামের নাম ফাঁকা রাখলে ভাষা অনুযায়ী নিজে বসে।</p>`;
   } else {
-    body = `<h5>ভাষা</h5>${seg("data-se-st", "lang:" + L.st.lang, [["lang:both", "বাংলা + English"], ["lang:bn", "বাংলা"], ["lang:en", "English"]])}
+    body = `<h5>ভাষা</h5>${seg("data-se-st", "lang:" + L.st.lang, [["lang:en", "English"], ["lang:bn", "বাংলা"], ["lang:both", "দুই ভাষা একসাথে"]])}
       <h5>লেখার মাপ</h5>${seg("data-se-st", "size:" + L.st.size, [["size:9.5", "ছোট"], ["size:10.5", "মাঝারি"], ["size:12", "বড়"]])}
       <h5>পাতা</h5>${seg("data-se-st", "orient:" + L.st.orient, [["orient:portrait", "খাড়া (A4)"], ["orient:landscape", "আড়াআড়ি (A4)"]])}
       <h5>রং</h5><div class="se-colors">${ST_COLORS.map(c => `<button data-se-st="accent:${c}" class="${L.st.accent === c ? "on" : ""}" style="background:${c}" aria-label="${c}"></button>`).join("")}
