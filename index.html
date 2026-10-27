@@ -721,6 +721,7 @@ a.act{text-decoration:none;color:inherit}
   <button class="sb-it" data-view="retailers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M9 20v-6h6v6"/></svg>Retailer</button>
   <button class="sb-it" data-view="products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>বই বিক্রি</button>
   <button class="sb-it" data-view="invoices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>Invoice</button>
+  <button class="sb-it" data-stall><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15h3M7 11h7M7 7h11"/></svg>সমন্বিত বিবরণী</button>
   <div class="sb-lbl">সিস্টেম</div>
   <button class="sb-it" data-view="manage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>ম্যানেজ<svg class="sb-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
   <div class="sb-sub" id="sbMgSub">
@@ -1741,56 +1742,87 @@ function submitPayment() {
 }
 
 /* ── Statement PDF + WhatsApp ── */
+// r = retailer-এর ক্রম, null = সব retailer মিলিয়ে সমন্বিত বিবরণী
 let stDraft = null;
-const ST_PERIODS = [["thisMonth", "এই মাস"], ["lastMonth", "গত মাস"], ["d90", "৩ মাস"], ["thisYear", "এই বছর"], ["all", "শুরু থেকে"], ["custom", "কাস্টম"]];
+const ST_PERIODS = [["thisMonth", "এই মাস"], ["lastMonth", "গত মাস"], ["month", "মাস বাছাই"], ["thisYear", "এই বছর"],
+  ["year", "বছর বাছাই"], ["d90", "৩ মাস"], ["all", "শুরু থেকে"], ["custom", "তারিখ থেকে তারিখ"]];
 function showStatement(i) {
-  stDraft = { r: i, period: "all", from: "", to: "" };
-  openSheet("Statement", statementBody(), `<button class="btn primary" id="stmtMake">PDF তৈরি করুন</button>`);
+  const t = today();
+  stDraft = { r: i, period: i == null ? "thisMonth" : "all", from: "", to: "",
+    month: `${t.getFullYear()}-${pad(t.getMonth() + 1)}`, year: t.getFullYear() };
+  openSheet(i == null ? "সমন্বিত বিবরণী" : "Statement", statementBody(), `<button class="btn primary" id="stmtMake">PDF তৈরি করুন</button>`);
 }
 function stRange() {
-  if (stDraft.period === "custom") return [stDraft.from, stDraft.to];
-  const [f, t] = range(stDraft.period);
-  return [f ? ymd(f) : "", t ? ymd(t) : ""];
+  const p = stDraft.period, t = today(), cap = d => d > t ? t : d; // ভবিষ্যতের তারিখ পর্যন্ত নয় — আজ পর্যন্ত
+  if (p === "custom") return [stDraft.from, stDraft.to];
+  if (p === "month") {
+    const [y, m] = stDraft.month.split("-").map(Number);
+    return [ymd(new Date(y, m - 1, 1)), ymd(cap(new Date(y, m, 0)))];
+  }
+  if (p === "year") return [ymd(new Date(+stDraft.year, 0, 1)), ymd(cap(new Date(+stDraft.year, 11, 31)))];
+  const [f, to] = range(p);
+  return [f ? ymd(f) : "", to ? ymd(to) : ""];
+}
+function stYears() {
+  // ডাটার প্রথম বছর থেকে এই বছর পর্যন্ত
+  let first = today().getFullYear();
+  D.sales.forEach(s => { if (s[1]) first = Math.min(first, +s[1].slice(0, 4)); });
+  const out = [];
+  for (let y = today().getFullYear(); y >= Math.max(first, 2015); y--) out.push(y);
+  return out;
 }
 function statementBody() {
   const [f, t] = stRange();
+  const all = stDraft.r == null;
+  const due = all ? D.retailers.reduce((a, r) => a + r.due, 0) : D.retailers[stDraft.r].due;
+  const pick = stDraft.period === "month"
+    ? `<input type="month" id="stMonth" value="${stDraft.month}" max="${ymd(today()).slice(0, 7)}" aria-label="মাস" style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);margin-top:10px">`
+    : stDraft.period === "year"
+    ? `<select id="stYear" aria-label="বছর" style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);margin-top:10px">${stYears().map(y =>
+        `<option value="${y}" ${+stDraft.year === y ? "selected" : ""}>${y}</option>`).join("")}</select>`
+    : "";
   return `
-    <div style="font-weight:600;margin-bottom:4px">${esc(D.retailers[stDraft.r].name)}</div>
-    <div style="font-size:13px;color:var(--ink-3)">এখন বাকি <b class="num" style="color:var(--neg)">${tk(D.retailers[stDraft.r].due)}</b></div>
+    <div style="font-weight:600;margin-bottom:4px">${all ? "সব retailer মিলিয়ে" : esc(D.retailers[stDraft.r].name)}</div>
+    <div style="font-size:13px;color:var(--ink-3)">${all ? "মোট পাওনা" : "এখন বাকি"} <b class="num" style="color:var(--neg)">${tk(due)}</b></div>
     <div class="flabel">সময়সীমা</div>
     <div class="chips" style="flex-wrap:wrap">${ST_PERIODS.map(([k, l]) =>
       `<button class="chip ${stDraft.period === k ? "on" : ""}" data-stperiod="${k}">${l}</button>`).join("")}</div>
+    ${pick}
     <div class="dates" style="margin-top:10px">
       <input type="date" id="stFrom" value="${f}" aria-label="শুরু"><input type="date" id="stTo" value="${t}" aria-label="শেষ">
     </div>
-    <div id="stResult" style="margin-top:16px;font-size:13px;color:var(--ink-3)">
-      আগের জের, প্রতিটা invoice, ফেরত ও payment, আর বর্তমান বাকি — PDF Drive-এ থাকবে, সাথে WhatsApp-এ পাঠানোর লিংক।
+    <div id="stResult" style="margin-top:16px;font-size:13px;color:var(--ink-3)">${all
+      ? "ব্যাংকে জমা দেওয়ার মতো বিবরণী: হিসাবের সারসংক্ষেপ, প্রতিটা retailer-এর আগের জের, নিট বিক্রি, ফেরত, জমা ও শেষ বাকি, আর মাস অনুযায়ী লেনদেন। PDF Drive-এ থাকবে।"
+      : "ব্যাংকে জমা দেওয়ার মতো বিবরণী: বিবরণী নম্বর, হিসাবের সারসংক্ষেপ, প্রতিটা চালান (মোট দাম, ছাড়, নিট), ফেরত ও জমা, চলতি ব্যালান্স আর শেষ বাকি কথায়। PDF Drive-এ থাকবে, সাথে WhatsApp-এ পাঠানোর লিংক।"}
     </div>`;
 }
 function makeStatementNow() {
   const [from, to] = stRange();
+  const all = stDraft.r == null;
   const btn = $("#stmtMake");
-  btn.disabled = true; btn.textContent = "তৈরি হচ্ছে…";
+  btn.disabled = true; btn.textContent = all ? "তৈরি হচ্ছে… (১-২ মিনিট)" : "তৈরি হচ্ছে…";
   const ok = json => {
     const r = typeof json === "string" ? JSON.parse(json) : json;
     btn.disabled = false; btn.textContent = "আবার তৈরি করুন";
     $("#stResult").innerHTML = `
-      <div style="color:var(--ink);font-size:14px">বর্তমান বাকি <b class="num">${tk(r.due)}</b> · ${esc(r.period)}</div>
+      <div style="color:var(--ink);font-size:14px">${all ? "মোট পাওনা" : "বর্তমান বাকি"} <b class="num">${tk(r.due)}</b> · ${esc(r.period)}</div>
+      ${r.no ? `<div style="margin-top:2px">বিবরণী নং <b>${esc(r.no)}</b>${all && r.count != null ? ` · ${r.count}টা retailer` : ""}</div>` : ""}
       <div class="result-links">
         <a class="big-link pdf" href="${esc(r.url)}" target="_blank">PDF খুলুন</a>
         ${r.download ? `<a class="big-link dl" href="${esc(r.download)}" target="_blank">⬇ PDF Download</a>` : ""}
         <button class="big-link dl" data-print="${esc(r.url || r.download)}">🖨 Print</button>
-        <a class="big-link wa" href="${esc(r.wa)}" target="_blank">WhatsApp-এ পাঠান</a>
+        ${r.wa ? `<a class="big-link wa" href="${esc(r.wa)}" target="_blank">WhatsApp-এ পাঠান</a>` : ""}
       </div>`;
   };
   const fail = err => { btn.disabled = false; btn.textContent = "PDF তৈরি করুন"; toast("❌ " + (err && err.message || err)); };
-  const p = { retailer: D.retailers[stDraft.r].name, from, to };
+  if (from && to && from > to) { fail("শুরুর তারিখ শেষের তারিখের পরে"); return; }
+  const p = all ? { all: true, from, to } : { retailer: D.retailers[stDraft.r].name, from, to };
   if (window.google && google.script && google.script.run) {
     google.script.run.withSuccessHandler(ok).withFailureHandler(fail).makeStatement(p, ownerKey());
   } else { // demo
     // লেখার ভেতরে দুইটা / পরপর রাখা যাবে না — Google-এর সার্ভার বাকি লাইনকে comment ভেবে কেটে দেয়
     setTimeout(() => ok({ url: "#", download: "#", wa: "https:\/\/wa.me/?text=" + encodeURIComponent("ডেমো Statement"),
-      due: D.retailers[stDraft.r].due, period: (from || "শুরু") + " – " + (to || "আজ") }), 500);
+      due: all ? 0 : D.retailers[stDraft.r].due, no: "ST-ডেমো", period: (from || "শুরু") + " – " + (to || "আজ") }), 500);
   }
 }
 
@@ -1802,6 +1834,7 @@ function showNewMenu() {
       <button data-newinv><i>＋</i><div>নতুন Invoice<span>যেকোনো retailer-এর — বই, Qty, Discount দিয়ে Save, PDF ও WhatsApp</span></div></button>
       <button data-newpay><i>৳</i><div>Payment যোগ<span>retailer-এর কাছ থেকে পাওয়া টাকা</span></div></button>
       <button data-newprod><i>✚</i><div>নতুন বই যোগ<span>Master PriceList-এ যোগ হয়ে সব retailer ফাইলে চলে যাবে</span></div></button>
+      <button data-stall><i>≡</i><div>সমন্বিত বিবরণী<span>সব retailer মিলিয়ে — দিন / মাস / বছর ধরে, ব্যাংকে জমা দেওয়ার মতো PDF</span></div></button>
       ${invoiceAppUrl() ? `<a href="${esc(invoiceAppUrl())}" target="_top" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-decoration:none;color:inherit;font-weight:600;font-size:15px">
         <i style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent);color:#fff;font-style:normal;font-size:18px;flex:none">⇱</i>
         <div>Invoice App খুলুন<span style="display:block;font-size:12.5px;color:var(--ink-3);font-weight:500">invoice বানানোর পাতা — কাজ শেষে উপরের "Dashboard" বোতামে ফিরে আসবেন</span></div></a>` : ""}
@@ -2600,7 +2633,7 @@ document.addEventListener("click", e => {
   if (more) { more.previousElementSibling.classList.remove("clip"); more.remove(); return; }
 
   // Payment / Statement
-  const act = e.target.closest("[data-payfor],[data-invfor],[data-stmt],[data-paymethod],[data-stperiod],[data-newinv],[data-newpay]," +
+  const act = e.target.closest("[data-payfor],[data-invfor],[data-stmt],[data-stall],[data-paymethod],[data-stperiod],[data-newinv],[data-newpay]," +
     "[data-iadd],[data-irm],[data-invmode],#payFab,#payTab,#paySubmit,#payCancel,#stmtMake,#invSubmit,#invCancel,#invAgain,#sheetDone," +
     "#invConfirm,#invBack,[data-invedit],[data-invvoid],#voidGo,#voidNo," +
     "[data-newprod],[data-nptype],[data-npupdate],[data-nprm],#npMore,#npSave,#npCancel,#addProdBtn");
@@ -2644,6 +2677,7 @@ document.addEventListener("click", e => {
     else if (act.id === "invAgain") showInvoiceForm(invDraft ? invDraft.r : null);
     else if (d.payfor !== undefined) showPayment(+d.payfor);
     else if (d.stmt !== undefined) showStatement(+d.stmt);
+    else if (d.stall !== undefined) showStatement(null);
     else if (d.paymethod) {
       payDraft.method = d.paymethod;
       document.querySelectorAll("[data-paymethod]").forEach(b => b.classList.toggle("on", b.dataset.paymethod === d.paymethod));
@@ -2720,6 +2754,12 @@ document.addEventListener("change", e => {
   if (el.id === "stFrom" || el.id === "stTo") {
     Object.assign(stDraft, { period: "custom", from: $("#stFrom").value, to: $("#stTo").value });
     if (stDraft.from && stDraft.to && stDraft.from > stDraft.to) [stDraft.from, stDraft.to] = [stDraft.to, stDraft.from];
+    $("#sheetBody").innerHTML = statementBody();
+    return;
+  }
+  if (el.id === "stMonth" || el.id === "stYear") {
+    if (!el.value) return;
+    stDraft[el.id === "stMonth" ? "month" : "year"] = el.value;
     $("#sheetBody").innerHTML = statementBody();
     return;
   }
