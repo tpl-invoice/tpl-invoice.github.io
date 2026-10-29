@@ -503,13 +503,23 @@ body.se-open{overflow:hidden}
 .se-top h2 small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
 .se-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .se-lang{flex:none}
-.se-lang button{padding:7px 10px}
+.se-lang button{padding:7px 10px;white-space:nowrap}
 .se-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .se-btn:hover{border-color:var(--ink-3)}
 .se-btn:disabled{opacity:.6}
 .se-btn.ic{width:38px;padding:8px 0}
 .se-btn.pri{background:var(--brand);color:#fff;border-color:transparent}
 .se-btn.warn{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.se-ednote{padding:9px 14px;background:#eff6ff;color:#1e3a8a;font-size:13px;border-bottom:1px solid #bfdbfe}
+.se-ednote[hidden]{display:none}
+.se-btn.on{background:#2563eb;color:#fff;border-color:transparent}
+.stp.editing .ed{display:inline-block;min-width:2.6em;min-height:1.2em;outline:1px dashed #94a3b8;outline-offset:1px;border-radius:2px;cursor:text}
+.stp.editing .ed:hover{background:#f1f5f9}
+.stp.editing .ed:focus{outline:2px solid #2563eb;background:#eff6ff}
+.stp .edc{width:1%;white-space:nowrap;background:#f8fafc !important;color:#334155}
+.stp .edc select{font:inherit;font-size:.85em;padding:1px 2px}
+.stp .ed-x{border:0;background:none;color:#b42318;cursor:pointer;font-size:1.2em;line-height:1;padding:0 4px}
+.stp .ed-add{display:block;margin:-6px 0 12px;border:1px dashed #94a3b8;background:#f8fafc;color:#1e3a8a;border-radius:6px;padding:4px 12px;cursor:pointer;font:inherit;font-size:.9em}
 .se-out{padding:10px 14px;background:var(--accent-soft);font-size:13.5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .se-out a{color:var(--brand-2);font-weight:600}
 :root[data-theme="dark"] .se-out a{color:var(--accent)}
@@ -2032,8 +2042,12 @@ function seTint(hex, a) {
 }
 
 /* ── কাগজ (প্রিভিউ = প্রিন্ট = PDF) ── */
-function sePaper(forPdf) {
+// clean = প্রিন্টের জন্য (বদলানোর ঘর/বোতাম ছাড়া, জলছাপসহ)
+function sePaper(forPdf, clean) {
   const d = SE.d, L = SE.L, st = L.st, all = SE.kind === "all";
+  const ed = SE.editing && !forPdf && !clean;
+  // বদলানোর সময় প্রতিটা ঘর লেখা যায় — data-ed = SE.d-র ভেতরে কোথায় বসবে
+  const E = (path, html) => ed ? `<span class="ed" contenteditable="true" spellcheck="false" data-ed="${path}">${html}</span>` : html;
   const lbl = (item, pair) => item.label ? esc(item.label) : esc(seT(pair));
   const head = (item, pair) => item.label ? esc(item.label)
     : seLang() === "both" ? `${esc(pair[1])}<small>${esc(pair[0])}</small>` : esc(seT(pair));
@@ -2042,12 +2056,13 @@ function sePaper(forPdf) {
 
   const info = () => {
     const val = {
-      retailer: `<b>${esc(d.retailer || "")}</b>`, account: esc(d.account || ""), phone: esc(d.phone || ""),
-      company: `<b>${esc(d.company)}</b>`, currency: "BDT (৳)",
+      retailer: `<b>${E("retailer", esc(d.retailer || ""))}</b>`, account: E("account", esc(d.account || "")), phone: E("phone", esc(d.phone || "")),
+      company: `<b>${E("company", esc(d.company))}</b>`, currency: "BDT (৳)",
       accounts: esc(seLang() === "bn" ? `${(d.shops || []).length}টি দোকান` : `${(d.shops || []).length} retailer${(d.shops || []).length === 1 ? "" : "s"}`),
-      no: `<b>${esc(SE.no || d.nextNo || "")}</b>`, period: esc(seLang() === "bn" ? d.period : d.period.replace("শুরু", "Beginning")), generated: esc(d.now)
+      no: seShownNo() ? `<b>${esc(seShownNo())}</b>` : "",
+      period: E("period", esc(seLang() === "bn" ? d.period : d.period.replace("শুরু", "Beginning"))), generated: E("now", esc(d.now))
     };
-    const side = s => L.info.filter(x => x.on && x.side === s)
+    const side = s => L.info.filter(x => x.on && x.side === s && val[x.k] !== "")
       .map(x => `<div><span class="k">${lbl(x, ST_TXT.info[x.k])}:</span> ${val[x.k]}</div>`).join("");
     return `<div class="stp-info"><div>${side("L")}</div><div class="r">${side("R")}</div></div>`;
   };
@@ -2066,13 +2081,17 @@ function sePaper(forPdf) {
   const table = (key, rows, open, total) => {
     const cols = L.cols[key].filter(c => c.on);
     if (!cols.length) return "";
-    const K = ST_KIND[key];
-    const tr = (cls, r) => `<tr class="${cls}">${cols.map(c => `<td class="${K[c.k] === "t" ? "" : K[c.k] === "c" || K[c.k] === "i" ? "c" : "n"}">${r[c.k] ?? ""}</td>`).join("")}</tr>`;
+    const K = ST_KIND[key], typed = ed && key === "table";
+    const pre = r => !typed ? "" : r._i == null ? `<td class="edc"></td>` : `<td class="edc"><select data-ed-type="${r._i}">${
+      [["inv", "বিক্রি"], ["ret", "ফেরত"], ["pay", "জমা"], ["adj", "টাকা ফেরত"]].map(([v, l]) => `<option value="${v}" ${r._t === v ? "selected" : ""}>${l}</option>`).join("")}</select></td>`;
+    const post = r => !ed ? "" : `<td class="edc">${r._i == null ? "" : `<button class="ed-x" data-ed-del="${key}:${r._i}" title="লাইন মুছুন">×</button>`}</td>`;
+    const tr = (cls, r) => `<tr class="${cls}">${pre(r)}${cols.map(c => `<td class="${K[c.k] === "t" ? "" : K[c.k] === "c" || K[c.k] === "i" ? "c" : "n"}">${r[c.k] ?? ""}</td>`).join("")}${post(r)}</tr>`;
     let body = "";
     if (open) body += tr("open", open);
     body += rows.map(r => tr("", r)).join("");
     if (total) body += tr("tot", total);
-    return `<table class="stp-t"><thead><tr>${cols.map(c => `<th>${head(c, ST_TXT[key][c.k])}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`;
+    return `<table class="stp-t"><thead><tr>${typed ? "<th class=\"edc\">ধরন</th>" : ""}${cols.map(c => `<th>${head(c, ST_TXT[key][c.k])}</th>`).join("")}${ed ? "<th class=\"edc\"></th>" : ""}</tr></thead><tbody>${body}</tbody></table>`
+      + (ed ? `<button class="ed-add" data-ed-add="${key}">＋ লাইন যোগ</button>` : "");
   };
   const cap = k => {
     const b = L.blocks.filter(x => x.on && (x.k === "shops" || x.k === "months"));
@@ -2090,20 +2109,21 @@ function sePaper(forPdf) {
     info, summary,
     table: () => {
       const C = ST_TXT.type;
-      const rows = d.rows.map(r => {
-        const [date, type, note, ref, qty, gross, disc, debit, credit, bal] = r;
-        const pay = type === "pay" || type === "adj";
-        return { date: esc(date), desc: esc(seT(C[type]) + (note ? " — " + note : "")), ref: esc(ref),
-          qty: seCell("i", qty), gross: pay ? "" : seCell("m", gross), disc: pay ? "" : seCell("m", disc),
-          debit: seCell("m", debit), credit: seCell("m", credit), bal: seCell("b", bal) };
+      const rows = d.rows.map((r, i) => {
+        const [date, type, note, ref, qty, gross, disc, debit, credit, bal, own] = r;
+        const pay = type === "pay" || type === "adj", p = `rows.${i}.`;
+        const desc = own != null ? own : seT(C[type]) + (note ? " — " + note : "");
+        return { _i: i, _t: type, date: E(p + 0, esc(date)), desc: E(p + 10, esc(desc)), ref: E(p + 3, esc(ref)),
+          qty: E(p + 4, seCell("i", qty)), gross: pay && !ed ? "" : E(p + 5, seCell("m", gross)), disc: pay && !ed ? "" : E(p + 6, seCell("m", disc)),
+          debit: E(p + 7, seCell("m", debit)), credit: E(p + 8, seCell("m", credit)), bal: seCell("b", bal) };
       });
-      const open = st.openRow ? { desc: esc(seT(["আগের জের", "Balance B/F"])), bal: seCell("b", d.opening) } : null;
+      const open = st.openRow || ed ? { desc: esc(seT(["আগের জের", "Balance B/F"])), bal: E("opening", seCell("b", d.opening)) } : null;
       const total = st.totalRow ? { desc: esc(seT(["মোট", "Total"])), debit: seMoney(d.sum.debit), credit: seMoney(d.sum.credit), bal: seCell("b", d.closing) } : null;
       return table("table", rows, open, total);
     },
     shops: () => {
-      const rows = d.shops.map((s, i) => ({ sl: i + 1, name: esc(s[0]), inv: seCell("i", s[1]), qty: seCell("i", s[2]),
-        opening: seCell("b", s[3]), net: seCell("m", s[4]), ret: seCell("m", s[5]), paid: seCell("m", s[6]), closing: seCell("b", s[7]) }));
+      const rows = d.shops.map((s, i) => { const p = `shops.${i}.`; return { _i: i, sl: i + 1, name: E(p + 0, esc(s[0])), inv: E(p + 1, seCell("i", s[1])), qty: E(p + 2, seCell("i", s[2])),
+        opening: E(p + 3, seCell("b", s[3])), net: E(p + 4, seCell("m", s[4])), ret: E(p + 5, seCell("m", s[5])), paid: E(p + 6, seCell("m", s[6])), closing: seCell("b", s[7]) }; });
       const T = d.T;
       const total = st.totalRow ? { name: esc(seT(["মোট", "Total"])), inv: seCell("i", T.inv), qty: seCell("i", T.qty), opening: seBal(T.opening),
         net: seMoney(T.net), ret: seMoney(T.ret), paid: seMoney(T.paid), closing: seBal(T.closing) } : null;
@@ -2111,8 +2131,8 @@ function sePaper(forPdf) {
       return t ? cap("shops") + t : "";
     },
     months: () => {
-      const rows = d.months.map(m => ({ month: esc(seMonth(m[0])), inv: seCell("i", m[1]), qty: seCell("i", m[2]), gross: seCell("m", m[3]),
-        disc: seCell("m", m[4]), net: seCell("m", m[5]), ret: seCell("m", m[6]), paid: seCell("m", m[7]) }));
+      const rows = d.months.map((m, i) => { const p = `months.${i}.`; return { _i: i, month: E(p + 8, esc(m[8] != null ? m[8] : seMonth(m[0]))), inv: E(p + 1, seCell("i", m[1])), qty: E(p + 2, seCell("i", m[2])),
+        gross: E(p + 3, seCell("m", m[3])), disc: E(p + 4, seCell("m", m[4])), net: E(p + 5, seCell("m", m[5])), ret: E(p + 6, seCell("m", m[6])), paid: E(p + 7, seCell("m", m[7])) }; });
       const s = d.sum;
       const total = st.totalRow ? { month: esc(seT(["মোট", "Total"])), inv: seCell("i", s.inv), qty: seCell("i", s.qty), gross: seMoney(s.gross),
         disc: seMoney(s.gross - s.net), net: seMoney(s.net), ret: seMoney(s.ret), paid: seMoney(s.paid) } : null;
@@ -2121,13 +2141,14 @@ function sePaper(forPdf) {
     },
     closing: () => {
       const a = d.closing, dr = a > 0.004, cr = a < -0.004;
-      const asOf = seLang() === "bn" ? `(${d.toText} পর্যন্ত)` : `(as on ${d.toText})`;
+      const asOf = seLang() === "bn" ? `(${E("toText", esc(d.toText))} পর্যন্ত)` : `(as on ${E("toText", esc(d.toText))})`;
       const tag = dr ? (seLang() === "en" ? "Dr (Receivable)" : "Dr (পাওনা)") : cr ? (seLang() === "en" ? "Cr (Advance)" : "Cr (অগ্রিম)") : "";
-      return `<div class="stp-close" style="color:${dr ? "#b42318" : "#16794a"}">${esc(seT(ST_TXT.close[SE.kind]))} ${esc(asOf)}: ৳${seMoney(Math.abs(a))} ${tag}</div>`;
+      return `<div class="stp-close" style="color:${dr ? "#b42318" : "#16794a"}">${esc(seT(ST_TXT.close[SE.kind]))} ${asOf}: ৳${seMoney(Math.abs(a))} ${tag}</div>`;
     },
     words: () => `<div class="stp-words">${esc(seLang() === "bn" ? "কথায়" : "In Words")}: ${esc(d.words)}</div>`,
     note: () => {
-      const n = ST_TXT.note[SE.kind];
+      const n0 = ST_TXT.note[SE.kind];
+      const n = seManual() ? [n0[0].replace(/^[^।]*।\s*/, ""), n0[1].replace(/^[^.]*\.\s*/, "")] : n0;
       const txt = L.note || (seLang() === "bn" ? n[0] : seLang() === "en" ? n[1] : n[0] + "\n" + n[1]);
       return `<div class="stp-note">${esc(txt)}</div>`;
     },
@@ -2136,7 +2157,7 @@ function sePaper(forPdf) {
   };
   const html = L.blocks.filter(b => b.on && B[b.k]).map(b => B[b.k]()).join("");
   const wm = !forPdf && st.wm && seImgs && seImgs.wm ? `<img class="stp-wm" src="${seImgs.wm}" alt="">` : "";
-  return `<div class="stp ${st.zebra ? "zebra" : ""}" style="--acc:${st.accent};--acc2:${seTint(st.accent, .12)};font-size:${st.size}pt">${wm}${html}</div>`;
+  return `<div class="stp ${st.zebra ? "zebra" : ""}${ed ? " editing" : ""}" style="--acc:${st.accent};--acc2:${seTint(st.accent, .12)};font-size:${st.size}pt">${wm}${html}</div>`;
 }
 
 /* ── খোলা ── */
@@ -2153,6 +2174,7 @@ function seOpen(p) {
     const d = typeof json === "string" ? JSON.parse(json) : json;
     if (d.imgs) seImgs = d.imgs;
     SE.d = d;
+    SE.orig = JSON.stringify(d); // আসল হিসাব — হাতে বদলের পর ফেরার জন্য
     SE.L = stMerge(stDefault(SE.kind), d.layout);
     SE.saved = JSON.stringify(SE.L);
     seRender();
@@ -2168,6 +2190,7 @@ function seOpen(p) {
 }
 function seClose() {
   if (SE && SE.L && JSON.stringify(SE.L) !== SE.saved && !confirm("সাজানো সেভ করা হয়নি — তবু বন্ধ করবেন?")) return;
+  if (SE && SE.d && seManual() && !confirm("হাতে বদলানো হিসাব বন্ধ করলে হারাবে — তবু বন্ধ করবেন?")) return;
   SE = null;
   $("#stEd").hidden = true;
   $("#stEd").innerHTML = "";
@@ -2181,16 +2204,19 @@ function seRender() {
   $("#stEd").innerHTML = `
     <div class="se-top">
       <button class="se-btn ic" data-se-close aria-label="বন্ধ">✕</button>
-      <h2>${esc(name)}<small>${esc(d.period)} · ${SE.kind === "all" ? "মোট পাওনা" : "শেষ বাকি"} ${esc(seBal(d.closing))}</small></h2>
+      <h2>${esc(name)}<small id="seTopSub">${seTopSub()}</small></h2>
       <div class="se-acts">
         <div class="se-seg se-lang">${[["en", "English"], ["bn", "বাংলা"], ["both", "দুই ভাষা"]].map(([v, l]) =>
           `<button data-se-st="lang:${v}" class="${SE.L.st.lang === v ? "on" : ""}">${l}</button>`).join("")}</div>
+        <button class="se-btn ${SE.editing ? "on" : ""}" id="seEdit">${SE.editing ? "✓ বদল শেষ" : "✏️ হিসাব বদলান"}</button>
+        ${seManual() ? `<button class="se-btn" id="seOrig">↺ আসল হিসাব</button>` : ""}
         <button class="se-btn ${dirty ? "warn" : ""}" id="seSave">${dirty ? "● সাজানো সেভ" : "✓ সাজানো সেভ"}</button>
         <button class="se-btn" id="sePrint">🖨 প্রিন্ট</button>
         <button class="se-btn" id="seDl">⬇ PDF</button>
         <button class="se-btn pri" id="seDrive">${SE.kind === "all" ? "☁ Drive-এ রাখুন" : "☁ Drive + WhatsApp"}</button>
       </div>
     </div>
+    <div class="se-ednote" ${SE.editing ? "" : "hidden"}>✏️ কাগজের যেকোনো ঘরে চেপে লিখুন, Enter বা বাইরে চাপলে বসবে — যোগফল, ব্যালান্স ও শেষ বাকি নিজে হিসাব হয়। বদল শুধু এই প্রিন্ট / PDF-এর জন্য, শিটে কিছু জমা হয় না।</div>
     <div class="se-out" id="seOut" ${SE.out ? "" : "hidden"}>${SE.out}</div>
     <div class="se-seg se-views"><button data-se-view="ctl" class="${SE.view === "ctl" ? "on" : ""}">⚙ সাজান</button>
       <button data-se-view="prev" class="${SE.view === "prev" ? "on" : ""}">👁 প্রিভিউ</button></div>
@@ -2298,6 +2324,19 @@ document.addEventListener("click", e => {
     if (!confirm("সব সাজানো শুরুর মতো করবেন?")) return;
     SE.L = stDefault(SE.kind); seRedraw(); toast("শুরুর মতো করা হলো — রাখতে চাইলে \"সাজানো সেভ\" চাপুন");
   }
+  else if (t.id === "seEdit") { SE.editing = !SE.editing; if (SE.editing && innerWidth < 900) SE.view = "prev"; seRender(); }
+  else if (t.id === "seOrig") {
+    if (!confirm("হাতে করা সব বদল বাদ দিয়ে আসল হিসাবে ফিরবেন?")) return;
+    SE.d = JSON.parse(SE.orig); seRender(); toast("আসল হিসাবে ফিরেছে");
+  }
+  else if (ds.edDel) { const [k, i] = ds.edDel.split(":"); SE.d[k === "table" ? "rows" : k].splice(+i, 1); seEdited(); }
+  else if (ds.edAdd) {
+    const k = ds.edAdd, t0 = today();
+    if (k === "table") SE.d.rows.push([`${pad(t0.getDate())}/${pad(t0.getMonth() + 1)}/${t0.getFullYear()}`, "inv", "", "", 0, 0, 0, 0, 0, 0]);
+    else if (k === "shops") SE.d.shops.push(["নতুন দোকান", 0, 0, 0, 0, 0, 0, 0]);
+    else SE.d.months.push(["", 0, 0, 0, 0, 0, 0, 0, "নতুন মাস"]);
+    seEdited();
+  }
   else if (t.id === "seSave") seSaveLayout(t);
   else if (t.id === "sePrint") seWithNo(sePrint);
   else if (t.id === "seDl") seWithNo(() => sePdf("download", t));
@@ -2306,6 +2345,7 @@ document.addEventListener("click", e => {
 document.addEventListener("change", e => {
   if (!SE || !SE.d || !e.target.closest("#stEd")) return;
   const ds = e.target.dataset;
+  if (ds.edType) { SE.d.rows[+ds.edType][1] = e.target.value; seEdited(); return; }
   if (ds.seOn) { const [path, i] = ds.seOn.split(":"); sePath(path)[+i].on = e.target.checked; seRedraw(); }
   else if (ds.seStb) { SE.L.st[ds.seStb] = e.target.checked; seRedraw(); }
   else if (ds.seColor !== undefined) { SE.L.st.accent = e.target.value; seRedraw(); }
@@ -2316,6 +2356,115 @@ document.addEventListener("input", e => {
   if (ds.seTxt) { SE.L[ds.seTxt] = e.target.value; sePreview(); }
   else if (ds.seLbl) { const [path, i] = ds.seLbl.split(":"); sePath(path)[+i].label = e.target.value.trim() ? e.target.value : ""; sePreview(); }
   else if (ds.seColor !== undefined) { SE.L.st.accent = e.target.value; sePreview(); }
+});
+
+/* ── হাতে বদল (শুধু প্রিন্ট / PDF-এর জন্য — শিটে কিছু যায় না) ── */
+const seManual = () => !!(SE && SE.orig && JSON.stringify(SE.d) !== SE.orig);
+const seShownNo = () => seManual() ? "" : (SE.no || SE.d.nextNo || "");
+function seTopSub() {
+  const d = SE.d;
+  return esc(`${d.period} · ${SE.kind === "all" ? "মোট পাওনা" : "শেষ বাকি"} ${seBal(d.closing)}`) + (seManual() ? " · <b>✏️ হাতে বদলানো</b>" : "");
+}
+// "১,২৩,৪৫৬.৫০" / "12,500 Cr" → সংখ্যা
+function seParse(txt, bal) {
+  let t = String(txt).replace(/[০-৯]/g, c => "০১২৩৪৫৬৭৮৯".indexOf(c));
+  const cr = bal && /cr/i.test(t);
+  const n = parseFloat(t.replace(/[^\d.\-]/g, "")) || 0;
+  return cr ? -Math.abs(n) : n;
+}
+const seDateKey = s => { const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m ? m[3] + pad(m[2]) + pad(m[1]) : ""; };
+function seApply(path, txt) {
+  const d = SE.d, p = path.split(".");
+  txt = txt.replace(/\s+/g, " ").trim();
+  if (p.length === 1) {
+    if (p[0] === "opening") d.opening = seParse(txt, true); else d[p[0]] = txt;
+    return;
+  }
+  const r = d[p[0]][+p[1]], i = +p[2];
+  const text = (p[0] === "rows" && (i === 0 || i === 3 || i === 10)) || (p[0] === "shops" && i === 0) || (p[0] === "months" && i === 8);
+  if (text) {
+    if (p[0] === "rows" && i === 10 && !txt) r[10] = null; else r[i] = txt;
+    if (p[0] === "rows" && i === 0) { // তারিখ বদলালে তারিখের ক্রমে
+      d.rows = d.rows.map((x, k) => [x, k]).sort((a, b) => (seDateKey(a[0][0]) || "0").localeCompare(seDateKey(b[0][0]) || "0") || a[1] - b[1]).map(x => x[0]);
+    }
+    return;
+  }
+  r[i] = seParse(txt, p[0] === "shops" && i === 3);
+  if (p[0] === "rows") { // মোট দাম − ছাড় = বিক্রি (বা ফেরতের জমা)
+    const t = r[1], amt = t === "inv" ? 7 : t === "ret" ? 8 : -1;
+    if (amt > 0 && (i === 5 || i === 6)) r[amt] = Math.max(0, r[5] - r[6]);
+    if (amt > 0 && i === amt && r[5]) r[6] = Math.max(0, r[5] - r[amt]);
+  }
+  if (p[0] === "months") {
+    if (i === 3 || i === 4) r[5] = r[3] - r[4];
+    if (i === 5) r[4] = r[3] - r[5];
+  }
+}
+// যোগফল, চলতি ব্যালান্স, শেষ বাকি, কথায় — বদলানো ঘর থেকে নতুন করে
+function seRecalc() {
+  const d = SE.d;
+  if (SE.kind === "all") {
+    const T = { opening: 0, net: 0, ret: 0, paid: 0, closing: 0, inv: 0, qty: 0 };
+    d.shops.forEach(r => { r[7] = r[3] + r[4] - r[5] - r[6]; T.inv += r[1]; T.qty += r[2]; T.opening += r[3]; T.net += r[4]; T.ret += r[5]; T.paid += r[6]; T.closing += r[7]; });
+    const s = Object.assign({}, d.sum, { gross: 0, net: 0, ret: 0, paid: 0, inv: 0, qty: 0 });
+    d.months.forEach(m => { s.inv += m[1]; s.qty += m[2]; s.gross += m[3]; s.net += m[5]; s.ret += m[6]; s.paid += m[7]; });
+    d.T = T; d.sum = s; d.opening = T.opening; d.closing = T.closing;
+  } else {
+    const s = { gross: 0, net: 0, ret: 0, paid: 0, inv: 0, nret: 0, qty: 0, rqty: 0, npay: 0, debit: 0, credit: 0 };
+    let bal = d.opening;
+    d.rows.forEach(r => {
+      const [, t, , , qty, gross, , debit, credit] = r;
+      bal += debit - credit; r[9] = bal;
+      s.debit += debit; s.credit += credit;
+      if (t === "pay" || t === "adj") { s.paid += credit - debit; s.npay++; }
+      else if (t === "ret") { s.ret += credit; s.nret++; s.rqty += qty; }
+      else { s.gross += gross; s.net += debit; s.inv++; s.qty += qty; }
+    });
+    d.sum = s; d.closing = bal;
+  }
+  d.words = seWords(d.closing);
+}
+function seWords(amount) {
+  const n = Math.round(Math.abs(amount) * 100) / 100, tk = Math.floor(n), ps = Math.round((n - tk) * 100);
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen",
+    "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const two = x => x < 20 ? ones[x] : tens[Math.floor(x / 10)] + (x % 10 ? " " + ones[x % 10] : "");
+  const three = x => (x >= 100 ? ones[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " : "") : "") + (x % 100 ? two(x % 100) : "");
+  const w = x => {
+    if (!x) return "Zero";
+    const parts = [], cr = Math.floor(x / 1e7);
+    if (cr) parts.push(w(cr) + " Crore");
+    x %= 1e7; const lk = Math.floor(x / 1e5); if (lk) parts.push(two(lk) + " Lakh");
+    x %= 1e5; const th = Math.floor(x / 1e3); if (th) parts.push(two(th) + " Thousand");
+    x %= 1e3; if (x) parts.push(three(x));
+    return parts.join(" ");
+  };
+  return "Taka " + w(tk) + (ps ? " and " + two(ps) + " Paisa" : "") + " Only";
+}
+// বদলের পর কাগজ আবার আঁকা — প্রিভিউর স্ক্রল যেখানে ছিল সেখানেই
+function seEdited() {
+  seRecalc();
+  const box = $("#sePrev"), top = box ? box.scrollTop : 0;
+  const had = !!$("#seOrig");
+  if (had !== seManual()) { seRender(); } else { sePreview(); $("#seTopSub").innerHTML = seTopSub(); }
+  const nb = $("#sePrev"); if (nb) nb.scrollTop = top;
+}
+// চেপে কিছু না বদলালে কিছুই বসে না (দেখানো লেখা আর জমা থাকা মান আলাদা হতে পারে)
+document.addEventListener("focusin", e => {
+  const el = e.target.closest && e.target.closest("#stEd [data-ed]");
+  if (el) el._o = el.innerText;
+});
+document.addEventListener("focusout", e => {
+  const el = e.target.closest && e.target.closest("#stEd [data-ed]");
+  if (!el || !SE || !SE.d) return;
+  if (el.innerText === el._o) return;
+  const before = JSON.stringify(SE.d);
+  seApply(el.dataset.ed, el.innerText);
+  if (JSON.stringify(SE.d) !== before) seEdited(); else sePreview();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.closest && e.target.closest("#stEd [data-ed]")) { e.preventDefault(); e.target.blur(); }
 });
 
 /* ── সাজানো সেভ ── */
@@ -2330,6 +2479,7 @@ function seSaveLayout(btn) {
 
 /* ── বিবরণী নম্বর: প্রিন্ট / PDF-এর আগে একবার নেওয়া (প্রিভিউতে শুধু পরের নম্বর দেখায়) ── */
 function seWithNo(next) {
+  if (seManual()) { next(); return; } // হাতে বদলানো হিসাবে সিস্টেমের বিবরণী নম্বর বসে না
   if (SE.no || !(window.google && google.script && google.script.run)) { SE.no = SE.no || SE.d.nextNo; sePreview(); next(); return; }
   google.script.run.withSuccessHandler(no => { SE.no = no; sePreview(); next(); })
     .withFailureHandler(err => { if (needKey(err, () => seWithNo(next))) return; toast("❌ " + (err && err.message || err)); })
@@ -2342,10 +2492,10 @@ function sePrint() {
   const css = document.createElement("style");
   css.id = "sePrintCss";
   css.textContent = `@page{size:A4 ${land ? "landscape" : "portrait"};margin:12mm 10mm 14mm;
-    @bottom-center{content:"${SE.no ? SE.no + "  ·  " : ""}Page " counter(page) " of " counter(pages);font:8pt "Times New Roman",Tinos,serif;color:#888}}`;
+    @bottom-center{content:"${seShownNo() ? seShownNo() + "  ·  " : ""}Page " counter(page) " of " counter(pages);font:8pt "Times New Roman",Tinos,serif;color:#888}}`;
   const box = document.createElement("div");
   box.id = "stPrint";
-  box.innerHTML = sePaper();
+  box.innerHTML = sePaper(false, true);
   document.head.appendChild(css);
   document.body.appendChild(box);
   document.body.classList.add("st-printing");
@@ -2369,7 +2519,7 @@ function seLoadH2p() {
 }
 function seFileName() {
   const per = SE.d.period.replace(/\//g, "-");
-  return (SE.kind === "all" ? `Consolidated Statement - ${per}` : `Statement - ${SE.d.retailer} - ${per}`) + (SE.no ? ` (${SE.no})` : "");
+  return (SE.kind === "all" ? `Consolidated Statement - ${per}` : `Statement - ${SE.d.retailer} - ${per}`) + (seShownNo() ? ` (${seShownNo()})` : "");
 }
 async function seMakePdf() {
   await seLoadH2p();
@@ -2403,7 +2553,7 @@ async function seMakePdf() {
         pdf.restoreGraphicsState();
       }
       pdf.setFont("times", "normal"); pdf.setFontSize(8); pdf.setTextColor(140);
-      pdf.text(`${SE.no ? SE.no + "  ·  " : ""}Page ${i} of ${n}`, W / 2, H - 6, { align: "center" });
+      pdf.text(`${seShownNo() ? seShownNo() + "  ·  " : ""}Page ${i} of ${n}`, W / 2, H - 6, { align: "center" });
     }
     return pdf;
   } finally {
@@ -2421,7 +2571,7 @@ async function sePdf(mode, btn) {
     btn.textContent = "⏳ Drive-এ রাখা…";
     const b64 = pdf.output("datauristring");
     const d = SE.d;
-    const p = { all: SE.kind === "all", retailer: d.retailer, no: SE.no, period: d.period, b64,
+    const p = { all: SE.kind === "all", retailer: d.retailer, no: seShownNo(), period: d.period, b64,
       sum: { net: d.sum.net, ret: d.sum.ret, paid: d.sum.paid }, due: d.closing };
     const r = await new Promise((ok, no) => {
       if (!(window.google && google.script && google.script.run)) {
@@ -2430,7 +2580,7 @@ async function sePdf(mode, btn) {
       google.script.run.withSuccessHandler(ok).withFailureHandler(no).saveStatementPdf(p, ownerKey());
     });
     const o = typeof r === "string" ? JSON.parse(r) : r;
-    SE.out = `<b>✓ Drive-এ রাখা হয়েছে</b> · ${esc(SE.no || "")}
+    SE.out = `<b>✓ Drive-এ রাখা হয়েছে</b> · ${esc(seShownNo())}
       <a href="${esc(o.url)}" target="_blank">PDF খুলুন</a>
       <a href="${esc(o.download)}" target="_blank">⬇ নামান</a>
       ${o.wa ? `<a class="wa" href="${esc(o.wa)}" target="_blank">WhatsApp-এ পাঠান</a>` : ""}`;
