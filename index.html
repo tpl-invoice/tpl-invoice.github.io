@@ -945,7 +945,7 @@ body.se-open{overflow:hidden}
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="sheet-head">
     <div class="grab"></div>
-    <div class="sheet-title"><h2 id="sheetTitle"></h2>
+    <div class="sheet-title"><button class="close" id="sheetBack" aria-label="ফিরে যান" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button><h2 id="sheetTitle" style="flex:1"></h2>
       <button class="close" id="sheetClose" aria-label="বন্ধ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
   </div>
@@ -1697,7 +1697,16 @@ function renderInvoices(listOnly) {
 }
 
 /* ═══════════════ Sheet ═══════════════ */
+// ফেরার পথ: Retailer/বইয়ের পাতা থেকে Invoice, Payment, Statement ইত্যাদি খুললে বাতিল/বন্ধ/সেভের পর আগের পাতায় ফেরে
+// (নতুন হিসাব নিয়ে আবার আঁকা হয়)। ✕ = সব বন্ধ।
+const SH = { stack: [], cur: null, next: null, back: false };
+const sheetPage = fn => { SH.next = fn; };   // ফেরা যায় এমন পাতা openSheet-এর ঠিক আগে নিজেকে জানায়
 function openSheet(title, body, foot) {
+  const on = $("#sheet").classList.contains("on");
+  if (!on) SH.stack = [];
+  else if (SH.cur && !SH.back) SH.stack.push(SH.cur);
+  SH.cur = SH.next; SH.next = null;
+  $("#sheetBack").hidden = !SH.stack.length;
   $("#sheetTitle").textContent = title;
   $("#sheetBody").innerHTML = body;
   const f = $("#sheetFoot"); f.hidden = !foot; f.innerHTML = foot || "";
@@ -1705,13 +1714,22 @@ function openSheet(title, body, foot) {
   $("#sheet").classList.add("on"); $("#backdrop").classList.add("on");
   document.body.style.overflow = "hidden";
 }
-function closeSheet() {
+function closeSheet(all) {
+  const prev = !all && SH.stack.pop();
+  if (prev) {
+    SH.back = true;
+    try { prev(); return; } catch (e) { /* আগের পাতা আর নেই — পুরো বন্ধ */ }
+    finally { SH.back = false; }
+  }
+  SH.stack = []; SH.cur = SH.next = null;
   $("#sheet").classList.remove("on"); $("#backdrop").classList.remove("on");
   document.body.style.overflow = "";
 }
 
 function showRetailer(i) {
   const r = D.retailers[i];
+  if (!r) throw new Error("retailer নেই");
+  sheetPage(() => showRetailer(i));
   const sales = filterSales(range(), { retailer: i });
   const sum = summarize(sales);
   const days = daysSince(r.lastInv);
@@ -1768,6 +1786,8 @@ function showRetailer(i) {
 
 function showProduct(i) {
   const p = D.products[i];
+  if (!p) throw new Error("বই নেই");
+  sheetPage(() => showProduct(i));
   const sales = filterSales().filter(s => s[3] === i);
   const per = {};
   sales.forEach(s => { const x = per[s[0]] || (per[s[0]] = { qty: 0, amt: 0 }); x.qty += s[4]; x.amt += s[7]; });
@@ -3473,7 +3493,7 @@ document.addEventListener("click", e => {
     else if (act.id === "stmtMake") makeStatementNow();
     return;
   }
-  const el = e.target.closest("[data-period],[data-type],[data-view],[data-sort],[data-retailer],[data-product],[data-toggle],[data-dperiod],[data-all],#filterBtn,#refreshBtn,#themeBtn,#sheetClose,#backdrop,#moreInv,#fApply,#fReset");
+  const el = e.target.closest("[data-period],[data-type],[data-view],[data-sort],[data-retailer],[data-product],[data-toggle],[data-dperiod],[data-all],#filterBtn,#refreshBtn,#themeBtn,#sheetClose,#sheetBack,#backdrop,#moreInv,#fApply,#fReset");
   if (!el) return;
   const ds = el.dataset;
   if (ds.period) {
@@ -3504,7 +3524,8 @@ document.addEventListener("click", e => {
   else if (el.id === "filterBtn") showFilters();
   else if (el.id === "refreshBtn") { if (S.view === "manage") mgShow(MG.sec, true); else load(true); }   // ম্যানেজে: খোলা অংশটাই নতুন করে
   else if (el.id === "themeBtn") toggleTheme();
-  else if (el.id === "sheetClose" || el.id === "backdrop") closeSheet();
+  else if (el.id === "sheetClose") closeSheet(true);
+  else if (el.id === "sheetBack" || el.id === "backdrop") closeSheet();
   else if (el.id === "moreInv") { S.iLimit += 40; renderInvoices(); }
   else if (el.id === "fReset") {
     Object.assign(S, { period: "thisMonth", from: "", to: "", retailers: [], products: [] });
@@ -3584,7 +3605,7 @@ document.addEventListener("input", e => {
   clearTimeout(typing);
   typing = setTimeout(() => ({ rQ: renderRetailers, pQ: renderProducts, iQ: renderInvoices })[id](true), 150);
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !SE) closeSheet(); });
 
 /* ── Theme ── */
 function applyTheme(t) {
