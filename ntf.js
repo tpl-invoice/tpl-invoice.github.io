@@ -111,6 +111,9 @@
     ' font-family:"Hind Siliguri",Inter,system-ui,sans-serif;color:var(--ni);font-size:14px;line-height:1.45}',
     '.ntf-root.ntf-dark{--nb:#161a2e;--ni:#e8eaf6;--ni2:#aab1c8;--nm:#6e7497;--nl:#2a3050;--ns:#1d2140;--nbr:#8b93ff;--nu:rgba(139,147,255,.11);--nsh:0 24px 60px -12px rgba(0,0,0,.7)}',
     '.ntf-root *{box-sizing:border-box}',
+    // display:flex hidden-কে হারিয়ে দেয় — বন্ধ জানালা অদৃশ্য থেকেও নিচের বোতামের চাপ খেয়ে ফেলত
+    '.ntf-root [hidden]{display:none!important}',
+    '.ntf-root:not(.ntf-open) .ntf-panel,.ntf-root:not(.ntf-open) .ntf-scrim{pointer-events:none}',
     '.ntf-scrim{position:fixed;inset:0;z-index:2147480000;background:rgba(15,23,42,.42);opacity:0;transition:opacity .18s}',
     '.ntf-root.ntf-open .ntf-scrim{opacity:1}',
     '.ntf-root:not(.ntf-sheet) .ntf-scrim{background:transparent}',
