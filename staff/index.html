@@ -6,10 +6,13 @@
 var API_URL='https://script.google.com/macros/s/AKfycbxMlXzBZ5n3fIzLDq9dCla3CGNT1mM9yNMipNPuSu6vDL-1RLZ2k12W9p9KJYvi_DRFuA/exec';
 (function(){
   function call(fn,args){
-    return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args})})
-      .then(function(r){if(!r.ok)throw new Error('সার্ভার সাড়া দিচ্ছে না ('+r.status+') — একটু পরে আবার চেষ্টা করুন।');
+    // নেট আটকে গেলে অনুরোধ অনন্তকাল ঝোলে, বোতামও "ব্যস্ত" থেকে যায় — ২ মিনিটে ছেড়ে দিই
+    var ac=new AbortController(),tm=setTimeout(function(){ac.abort();},120000);
+    return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args}),signal:ac.signal})
+      .then(function(r){clearTimeout(tm);if(!r.ok)throw new Error('সার্ভার সাড়া দিচ্ছে না ('+r.status+') — একটু পরে আবার চেষ্টা করুন।');
         return r.json().catch(function(){throw new Error('সার্ভারের উত্তর বোঝা যায়নি।');});},
-        function(){throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');})
+        function(e){clearTimeout(tm);if(e&&e.name==='AbortError')throw new Error('সার্ভার ২ মিনিটেও উত্তর দেয়নি — কাজটা হয়ে থাকতে পারে, ↻ চেপে দেখে নিন।');
+          throw new Error('সার্ভারে পৌঁছানো যায়নি — ইন্টারনেট সংযোগ দেখুন।');})
       .then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'অজানা সমস্যা।');return j.data;});
   }
   function builder(){
