@@ -2352,7 +2352,7 @@ const ST_TXT = {
   blocks: { header: ["প্রতিষ্ঠানের নাম ও লোগো", "Header"], title: ["শিরোনাম", "Title"], info: ["হিসাবের তথ্য", "Account details"],
     summary: ["সারসংক্ষেপ", "Summary"], table: ["লেনদেনের তালিকা", "Transactions"], shops: ["Retailer অনুযায়ী হিসাব", "Account-wise Summary"],
     months: ["মাস অনুযায়ী লেনদেন", "Month-wise Transactions"], closing: ["শেষ বাকি", "Closing balance"], words: ["কথায়", "In words"],
-    note: ["নোট", "Note"], sign: ["স্বাক্ষর", "Signatures"], slogan: ["নিচের লেখা (slogan)", "Footer line"] },
+    campaign: ["Campaign-এর বিবরণী", "Campaign Statement"], note: ["নোট", "Note"], sign: ["স্বাক্ষর", "Signatures"], slogan: ["নিচের লেখা (slogan)", "Footer line"] },
   info: { retailer: ["দোকান", "Retailer"], account: ["হিসাব নং", "Account ID"], phone: ["ফোন", "Phone"], company: ["প্রতিষ্ঠান", "Prepared For"],
     accounts: ["হিসাব", "Accounts"], no: ["বিবরণী নং", "Statement No"], period: ["সময়সীমা", "Statement Period"],
     generated: ["তৈরির সময়", "Generated On"], currency: ["মুদ্রা", "Currency"] },
@@ -2368,6 +2368,8 @@ const ST_TXT = {
     net: ["নিট বিক্রি", "Net Sales"], ret: ["ফেরত", "Returns"], paid: ["জমা", "Received"], closing: ["শেষ বাকি", "Closing"] },
   months: { month: ["মাস", "Month"], inv: ["চালান", "Invoices"], qty: ["কপি", "Copies"], gross: ["মোট দাম", "Gross (MRP)"], disc: ["ছাড়", "Discount"],
     net: ["নিট বিক্রি", "Net Sales"], ret: ["ফেরত", "Returns"], paid: ["জমা", "Received"] },
+  campaign: { sl: ["ক্রম", "SL"], shop: ["দোকান", "Retailer"], date: ["তারিখ", "Date"], name: ["ক্যাম্পেইন", "Campaign"], kind: ["ধরন", "Type"],
+    month: ["কোন মাসের", "For Month"], method: ["মাধ্যম", "Method"], n: ["লেনদেন", "Payments"], amt: ["টাকা", "Amount (৳)"] },
   type: { inv: ["বিক্রি", "Sales Invoice"], ret: ["ফেরত / বদল", "Sales Return"], pay: ["জমা", "Payment Received"], adj: ["টাকা ফেরত / সমন্বয়", "Adjustment"] },
   title: { retailer: ["হিসাব বিবরণী", "Statement of Account"], all: ["সমন্বিত হিসাব বিবরণী", "Consolidated Statement of Retailer Accounts"] },
   close: { retailer: ["শেষ বাকি", "Closing Balance"], all: ["মোট পাওনা", "Total Receivable"] },
@@ -2382,7 +2384,8 @@ const ST_TXT = {
 const ST_KIND = {
   table: { date: "c", desc: "t", ref: "t", qty: "i", gross: "m", disc: "m", debit: "m", credit: "m", bal: "b" },
   shops: { sl: "i", name: "t", inv: "i", qty: "i", opening: "b", net: "m", ret: "m", paid: "m", closing: "b" },
-  months: { month: "t", inv: "i", qty: "i", gross: "m", disc: "m", net: "m", ret: "m", paid: "m" }
+  months: { month: "t", inv: "i", qty: "i", gross: "m", disc: "m", net: "m", ret: "m", paid: "m" },
+  campaign: { sl: "i", shop: "t", date: "c", name: "t", kind: "t", month: "t", method: "t", n: "i", amt: "m" }
 };
 const ST_COLORS = ["#1f4e78", "#14213d", "#0f766e", "#7c2d12", "#5b21b6", "#334155"];
 const BN_MONTH = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
@@ -2394,8 +2397,10 @@ function stDefault(kind) {
   const cols = keys => keys.map(k => ({ k, on: true, label: "" }));
   return {
     v: 1,
-    blocks: items(all ? ["header", "title", "info", "summary", "shops", "months", "closing", "words", "note", "sign", "slogan"]
-                      : ["header", "title", "info", "summary", "table", "closing", "words", "note", "sign", "slogan"]),
+    // Campaign শুরুতে বন্ধ — ব্যবহারকারী চাইলে তবেই বিবরণীতে আসে
+    blocks: items(all ? ["header", "title", "info", "summary", "shops", "months", "closing", "words", "campaign", "note", "sign", "slogan"]
+                      : ["header", "title", "info", "summary", "table", "closing", "words", "campaign", "note", "sign", "slogan"])
+      .map(b => b.k === "campaign" ? { ...b, on: false } : b),
     title: "", note: "", signL: "Prepared By", signR: "Authorised Signature",
     info: (all ? [["company", "L"], ["accounts", "L"], ["currency", "L"], ["no", "R"], ["period", "R"], ["generated", "R"]]
                : [["retailer", "L"], ["account", "L"], ["phone", "L"], ["no", "R"], ["period", "R"], ["generated", "R"]])
@@ -2403,8 +2408,8 @@ function stDefault(kind) {
     sum: items(["opening", "gross", "disc", "net", "ret", "paid", "closing"]),
     act: items(all ? ["shops", "inv", "qty", "rqty", "npay"] : ["inv", "qty", "nret", "rqty", "npay"]),
     actPos: "right",
-    cols: all ? { shops: cols(Object.keys(ST_KIND.shops)), months: cols(Object.keys(ST_KIND.months)) }
-              : { table: cols(Object.keys(ST_KIND.table)) },
+    cols: all ? { shops: cols(Object.keys(ST_KIND.shops)), months: cols(Object.keys(ST_KIND.months)), campaign: cols(["sl", "shop", "name", "kind", "n", "amt"]) }
+              : { table: cols(Object.keys(ST_KIND.table)), campaign: cols(["date", "name", "kind", "month", "method", "amt"]) },
     st: { lang: "en", size: 10.5, accent: ST_COLORS[0], zebra: true, logo: true, qr: true, address: true, wm: true,
           orient: "portrait", openRow: true, totalRow: true }
   };
@@ -2416,7 +2421,11 @@ function stMerge(def, saved) {
     if (!Array.isArray(s)) return d;
     const keys = new Set(d.map(x => x.k));
     const out = s.filter(x => x && keys.has(x.k)).map(x => ({ ...d.find(y => y.k === x.k), ...x }));
-    d.forEach(x => { if (!out.some(y => y.k === x.k)) out.push(x); });
+    // নতুন যোগ হওয়া জিনিস তালিকার শেষে নয়, শুরুর সাজানোয় যার পরে থাকে তার পরেই বসে
+    d.forEach((x, i) => {
+      if (out.some(y => y.k === x.k)) return;
+      out.splice(i ? out.findIndex(y => y.k === d[i - 1].k) + 1 : 0, 0, x);
+    });
     return out;
   };
   const L = { ...def, ...saved, st: { ...def.st, ...(saved.st || {}) }, cols: {} };
@@ -2491,16 +2500,17 @@ function sePaper(forPdf, clean) {
     const cols = L.cols[key].filter(c => c.on);
     if (!cols.length) return "";
     const K = ST_KIND[key], typed = ed && key === "table";
+    const edT = ed && key !== "campaign";   // Campaign-এর অংশ হাতে বদলানো যায় না — হিসাব আসে Campaign পাতা থেকে
     const pre = r => !typed ? "" : r._i == null ? `<td class="edc"></td>` : `<td class="edc"><select data-ed-type="${r._i}">${
       [["inv", "বিক্রি"], ["ret", "ফেরত"], ["pay", "জমা"], ["adj", "টাকা ফেরত"]].map(([v, l]) => `<option value="${v}" ${r._t === v ? "selected" : ""}>${l}</option>`).join("")}</select></td>`;
-    const post = r => !ed ? "" : `<td class="edc">${r._i == null ? "" : `<button class="ed-x" data-ed-del="${key}:${r._i}" title="লাইন মুছুন">×</button>`}</td>`;
+    const post = r => !edT ? "" : `<td class="edc">${r._i == null ? "" : `<button class="ed-x" data-ed-del="${key}:${r._i}" title="লাইন মুছুন">×</button>`}</td>`;
     const tr = (cls, r) => `<tr class="${cls}">${pre(r)}${cols.map(c => `<td class="${K[c.k] === "t" ? "" : K[c.k] === "c" || K[c.k] === "i" ? "c" : "n"}">${r[c.k] ?? ""}</td>`).join("")}${post(r)}</tr>`;
     let body = "";
     if (open) body += tr("open", open);
     body += rows.map(r => tr("", r)).join("");
     if (total) body += tr("tot", total);
-    return `<table class="stp-t"><thead><tr>${typed ? "<th class=\"edc\">ধরন</th>" : ""}${cols.map(c => `<th>${head(c, ST_TXT[key][c.k])}</th>`).join("")}${ed ? "<th class=\"edc\"></th>" : ""}</tr></thead><tbody>${body}</tbody></table>`
-      + (ed ? `<button class="ed-add" data-ed-add="${key}">＋ লাইন যোগ</button>` : "");
+    return `<table class="stp-t"><thead><tr>${typed ? "<th class=\"edc\">ধরন</th>" : ""}${cols.map(c => `<th>${head(c, ST_TXT[key][c.k])}</th>`).join("")}${edT ? "<th class=\"edc\"></th>" : ""}</tr></thead><tbody>${body}</tbody></table>`
+      + (edT ? `<button class="ed-add" data-ed-add="${key}">＋ লাইন যোগ</button>` : "");
   };
   const cap = k => {
     const b = L.blocks.filter(x => x.on && (x.k === "shops" || x.k === "months"));
@@ -2555,6 +2565,24 @@ function sePaper(forPdf, clean) {
       return `<div class="stp-close" style="color:${dr ? "#b42318" : "#16794a"}">${esc(seT(ST_TXT.close[SE.kind]))} ${asOf}: ৳${seMoney(Math.abs(a))} ${tag}</div>`;
     },
     words: () => `<div class="stp-words">${esc(seLang() === "bn" ? "কথায়" : "In Words")}: ${esc(d.words)}</div>`,
+    campaign: () => {
+      const list = seCampRows(), title = `<div class="stp-cap">${esc(seT(ST_TXT.blocks.campaign))}</div>`;
+      if (!list.length) return title + `<div class="stp-note">${esc(seT(["এই সময়ে campaign-এর কোনো টাকা দেওয়া হয়নি।", "No campaign payments in this period."]))}</div>`;
+      const kind = c => esc(seT(c.kind === "m" ? ["মাসিক", "Monthly"] : ["এককালীন", "Lump-sum"]));
+      const sum = list.reduce((a, x) => a + x.q[3], 0);
+      let rows;
+      if (all) { // সমন্বিত: প্রতিটা campaign এক লাইনে, এই সময়ে মোট কত
+        const by = {};
+        list.forEach(x => { const g = by[x.c.id] || (by[x.c.id] = { c: x.c, n: 0, amt: 0 }); g.n++; g.amt += x.q[3]; });
+        rows = Object.values(by).sort((a, b) => b.amt - a.amt).map((g, i) => ({ sl: i + 1, shop: esc(D.retailers[g.c.r].name), name: esc(g.c.name),
+          kind: kind(g.c), n: seCell("i", g.n), amt: seMoney(g.amt) }));
+      } else rows = list.map(x => ({ date: esc((x.q[2] || "").split("-").reverse().join("/")), name: esc(x.c.name), kind: kind(x.c),
+        month: x.q[4] ? esc(seMonth(x.q[4])) : "", method: esc(x.q[5]), amt: seMoney(x.q[3]) }));
+      const total = st.totalRow ? { name: esc(seT(["মোট", "Total"])), n: seCell("i", list.length), amt: seMoney(sum) } : null;
+      const t = table("campaign", rows, null, total);
+      // পড়ার সময় কেউ যেন এই টাকাকে বাকির অংশ না ভাবে
+      return t ? title + t + `<div class="stp-note">${esc(seT(["এই টাকা রিটেইলারের বাকির হিসাবে ধরা হয়নি।", "These amounts are not part of the account balance."]))}</div>` : "";
+    },
     note: () => {
       const n0 = ST_TXT.note[SE.kind];
       const n = seManual() ? [n0[0].replace(/^[^।]*।\s*/, ""), n0[1].replace(/^[^.]*\.\s*/, "")] : n0;
@@ -2568,6 +2596,25 @@ function sePaper(forPdf, clean) {
   const wm = !forPdf && st.wm && seImgs && seImgs.wm ? `<img class="stp-wm" src="${seImgs.wm}" alt="">` : "";
   return `<div class="stp ${st.zebra ? "zebra" : ""}${ed ? " editing" : ""}" style="--acc:${st.accent};--acc2:${seTint(st.accent, .12)};font-size:${st.size}pt">${wm}${html}</div>`;
 }
+
+// বিবরণীর সময়ের ভেতরে দেওয়া campaign-এর টাকা (retailer-এর বিবরণীতে শুধু তারটা), পুরনোটা আগে
+function seCampRows() {
+  const p = SE.p, from = p.from || "", to = p.to || "";
+  const r = p.all ? -1 : D.retailers.findIndex(x => x.name === p.retailer);
+  const byId = Object.fromEntries(D.campaigns.map(c => [c.id, c]));
+  return D.campaignPays
+    .filter(q => { const c = byId[q[1]]; return c && (p.all || c.r === r) && (!from || (q[2] && q[2] >= from)) && (!to || (q[2] && q[2] <= to)); })
+    .map(q => ({ q, c: byId[q[1]] }))
+    .sort((a, b) => (a.q[2] || "").localeCompare(b.q[2] || ""));
+}
+// উপরের বোতাম: এই বিবরণীতে Campaign দেখাবে কি না (অংশের তালিকার টিকের সাথে একই জিনিস)
+const seCampBlock = () => SE.L.blocks.find(b => b.k === "campaign");
+document.addEventListener("click", e => {
+  if (!e.target.closest("[data-se-camp]") || !SE || !SE.L) return;
+  const b = seCampBlock();
+  b.on = !b.on;
+  seRedraw();
+});
 
 /* ── খোলা ── */
 function seOpen(p) {
@@ -2617,6 +2664,7 @@ function seRender() {
       <div class="se-acts">
         <div class="se-seg se-lang">${[["en", "English"], ["bn", "বাংলা"], ["both", "দুই ভাষা"]].map(([v, l]) =>
           `<button data-se-st="lang:${v}" class="${SE.L.st.lang === v ? "on" : ""}">${l}</button>`).join("")}</div>
+        <button class="se-btn ${seCampBlock().on ? "on" : ""}" data-se-camp title="এই বিবরণীতে Campaign-এর টাকার হিসাব দেখাবে কি না">📣 Campaign ${seCampBlock().on ? "আছে" : "নেই"}</button>
         <button class="se-btn ${SE.editing ? "on" : ""}" id="seEdit">${SE.editing ? "✓ বদল শেষ" : "✏️ হিসাব বদলান"}</button>
         ${seManual() ? `<button class="se-btn" id="seOrig">↺ আসল হিসাব</button>` : ""}
         <button class="se-btn ${dirty ? "warn" : ""}" id="seSave">${dirty ? "● সাজানো সেভ" : "✓ সাজানো সেভ"}</button>
@@ -2675,6 +2723,8 @@ function seCtl() {
         if (b.on && b.k === "note") extra = `<div class="se-sub"><textarea class="se-in" rows="3" data-se-txt="note" placeholder="ফাঁকা রাখলে নিচের লেখাটাই থাকবে:\n${esc(ST_TXT.note[SE.kind][0])}">${esc(L.note)}</textarea></div>`;
         if (b.on && b.k === "sign") extra = `<div class="se-sub se-two"><input class="se-in" data-se-txt="signL" value="${esc(L.signL)}" placeholder="বাঁয়ের স্বাক্ষর"><input class="se-in" data-se-txt="signR" value="${esc(L.signR)}" placeholder="ডানের স্বাক্ষর"></div>`;
         if (b.on && (b.k === "table" || b.k === "shops" || b.k === "months")) extra = `<div class="se-sub">${b.k === "table" ? tog("openRow", "আগের জের লাইন") : ""}${tog("totalRow", "মোট লাইন")}<button class="se-link" data-se-tab="cols">কলাম সাজান →</button></div>`;
+        if (b.k === "campaign") extra = `<div class="se-sub se-help">${b.on ? "এই সময়ে দেওয়া campaign-এর টাকা বিবরণীতে আলাদা অংশে আসছে।" : "টিক দিলে এই সময়ে দেওয়া campaign-এর টাকা বিবরণীতে আলাদা অংশে আসবে।"} বাকির হিসাবে যোগ হয় না।</div>` +
+          (b.on ? `<div class="se-sub">${tog("totalRow", "মোট লাইন")}<button class="se-link" data-se-tab="cols">কলাম সাজান →</button></div>` : "");
         if (b.on && b.k === "slogan" && !SE.d.slogan) extra = `<div class="se-sub se-help">সেটিংসে slogan দেওয়া নেই।</div>`;
         return `<div class="se-row ${b.on ? "" : "off"}">${chk("blocks", i, b.on, esc(ST_TXT.blocks[b.k][0]))}${mv("blocks", i, L.blocks.length)}</div>${extra}`;
       }).join("");
