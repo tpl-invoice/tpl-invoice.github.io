@@ -176,6 +176,31 @@ main{padding-top:16px}
 .paidbar{height:4px;border-radius:2px;background:var(--neg-soft);margin-top:7px;overflow:hidden}
 .paidbar i{display:block;height:100%;background:var(--pos);border-radius:2px}
 
+/* Campaign */
+.mstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:11px}
+.mstrip .m{padding:6px 1px 5px;text-align:center;border-radius:9px;font-size:11.5px;line-height:1.25;background:var(--chip);color:var(--ink-3);min-width:0}
+.mstrip .m b{display:block;font-size:12px}
+.mstrip .m.paid{background:var(--pos-soft);color:var(--pos)}
+.mstrip .m.part{background:var(--warn-soft);color:var(--warn)}
+.mstrip .m.due{background:var(--neg-soft);color:var(--neg);box-shadow:inset 0 0 0 1.5px var(--neg)}
+button.m{cursor:pointer}
+.cp-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:16px 0 10px}
+.cp-tools .seg button{padding:7px 13px;font-size:13px}
+.cp-tools .act{margin-left:auto}
+.cp-due .main{min-width:0}
+.cp-due .t1,.cp-due .t2{white-space:normal}
+.cp-go{padding:7px 12px;border-radius:10px;font-weight:600;font-size:12.5px;background:linear-gradient(135deg,#4263eb,#1c7ed6);color:#fff;white-space:nowrap;flex:none}
+.cp-foot{margin-top:11px;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-3)}
+.cp-cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.cp-cmp div{background:var(--surface-2);border-radius:12px;padding:9px 10px;min-width:0}
+.cp-cmp small{display:block;font-size:11.5px;color:var(--ink-3)}
+.cp-cmp b{font-size:15px;overflow-wrap:anywhere}
+.seg.cp-kind{margin-bottom:14px}
+.seg.cp-kind button{flex:1;padding:9px;font-size:14px}
+.cp-sum{padding:11px 13px;border-radius:12px;background:var(--pos-soft);color:var(--pos);font-weight:600;font-size:13.5px;margin-bottom:14px}
+.cp-sum:empty{display:none}
+.cp-x{flex:none;width:30px;height:30px;border-radius:9px;background:var(--chip);color:var(--ink-3);font-size:13px}
+
 /* retailer cards */
 .rcards{display:grid;gap:12px}
 .rcard{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;cursor:pointer;transition:transform .15s}
@@ -853,6 +878,7 @@ body.se-open{overflow:hidden}
   <button class="sb-it" data-view="products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>বই বিক্রি</button>
   <button class="sb-it" data-view="invoices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>Invoice</button>
   <button class="sb-it" data-stall><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15h3M7 11h7M7 7h11"/></svg>সমন্বিত বিবরণী</button>
+  <button class="sb-it" data-view="campaign"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h3l7 5V5L7 10H4a1 1 0 0 0-1 1z"/><path d="M18 8a5 5 0 0 1 0 8"/></svg>Campaign</button>
   <div class="sb-lbl">সিস্টেম</div>
   <button class="sb-it" data-view="manage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>ম্যানেজ<svg class="sb-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
   <div class="sb-sub" id="sbMgSub">
@@ -936,6 +962,7 @@ body.se-open{overflow:hidden}
   <section class="view" id="v-retailers"></section>
   <section class="view" id="v-products"></section>
   <section class="view" id="v-invoices"></section>
+  <section class="view" id="v-campaign"></section>
   <section class="view" id="v-manage"></section>
 </main>
 <footer class="dev-foot"><svg class="dev-mk" viewBox="0 0 100 100" aria-hidden="true" style="width:1.4em;height:1.4em;vertical-align:-.34em;margin-right:5px;display:inline-block"><defs><linearGradient id="devmk-invoic2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100"><stop offset="0" stop-color="#6366f1"/><stop offset=".5" stop-color="#8b5cf6"/><stop offset="1" stop-color="#d946ef"/></linearGradient></defs><path d="M8 18H92M16 88 40 18 64 88M84 18V88" fill="none" stroke="url(#devmk-invoic2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="64" r="8" fill="url(#devmk-invoic2)"/></svg>Developed By: <b>Md. Ashraful Islam</b></footer>
@@ -1210,13 +1237,13 @@ const PERIODS = [
   ["thisMonth", "এই মাস"], ["lastMonth", "গত মাস"], ["d30", "৩০ দিন"], ["d90", "৯০ দিন"],
   ["thisYear", "এই বছর"], ["all", "সব সময়"], ["custom", "কাস্টম"]
 ];
-const VIEW_TITLES = { overview: "সংক্ষিপ্ত চিত্র", retailers: "Retailer", products: "বই বিক্রি", invoices: "Invoice", manage: "ম্যানেজ" };
+const VIEW_TITLES = { overview: "সংক্ষিপ্ত চিত্র", retailers: "Retailer", products: "বই বিক্রি", invoices: "Invoice", campaign: "Campaign", manage: "ম্যানেজ" };
 // কম্পিউটারে পাতার শিরোনামের নিচে ছোট বর্ণনা
 const VIEW_SUBS = { overview: "বিক্রি, আদায় ও বাকির এক নজরে হিসাব", retailers: "প্রতিটা দোকানের বিক্রি, বাকি ও যোগাযোগ",
-  products: "কোন বই কত বিক্রি হলো", invoices: "সব Invoice ও ফেরত — খুঁজুন, সংশোধন বা বাতিল", manage: "Retailer, বই, Discount, Staff, সেটিংস ও টুলস" };
+  products: "কোন বই কত বিক্রি হলো", invoices: "সব Invoice ও ফেরত — খুঁজুন, সংশোধন বা বাতিল", campaign: "রিটেইলারকে দেওয়া প্রচারণার টাকা — আলাদা খরচ, বাকির হিসাবে আসে না", manage: "Retailer, বই, Discount, Staff, সেটিংস ও টুলস" };
 const S = Object.assign({
   period: "thisMonth", from: "", to: "", retailers: [], products: [], type: "all",
-  view: "overview", rSort: "sales", rQ: "", pQ: "", iQ: "", iLimit: 40
+  view: "overview", rSort: "sales", rQ: "", pQ: "", iQ: "", iLimit: 40, cpF: "all"
 }, store.get("rd-state") || {});
 S.iLimit = 40;
 const save = () => store.set("rd-state", { period: S.period, from: S.from, to: S.to, retailers: S.retailers, products: S.products, type: S.type, view: S.view, rSort: S.rSort });
@@ -1321,7 +1348,7 @@ function prepare(raw) {
     if (p[1] > r.lastPay) r.lastPay = p[1];
   });
   R.forEach(r => { r.due = r.buyAll - r.paidAll; });
-  return { ...raw, sales, retailers: R };
+  return { ...raw, sales, retailers: R, campaigns: raw.campaigns || [], campaignPays: raw.campaignPays || [] };
 }
 
 /* ═══════════════ Period ═══════════════ */
@@ -1401,8 +1428,9 @@ function render() {
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + S.view));
   renderFilterBar();
   $(".filterbar").hidden = S.view === "manage"; // সময়/ফিল্টার ম্যানেজে লাগে না
+  $("#typeSeg").style.display = S.view === "campaign" ? "none" : ""; // Normal/Combo বইয়ের ভাগ, Campaign-এ লাগে না
   document.body.classList.toggle("in-manage", S.view === "manage");
-  ({ overview: renderOverview, retailers: renderRetailers, products: renderProducts, invoices: renderInvoices, manage: renderManage })[S.view]();
+  ({ overview: renderOverview, retailers: renderRetailers, products: renderProducts, invoices: renderInvoices, campaign: renderCampaign, manage: renderManage })[S.view]();
   fitSticky();
   save();
 }
@@ -1475,6 +1503,7 @@ function renderOverview() {
       <div class="tile c-gold"><div class="k">গড় invoice</div><div class="v num">${tk(cur.inv ? cur.amt / cur.inv : 0)}</div><div class="s">প্রতি অর্ডারে</div></div>
       <div class="tile c-violet"><div class="k">গড় discount</div><div class="v num">${avgDisc(sales)}</div><div class="s">বিক্রির ভিত্তিতে</div></div>
     </div>
+    ${cpOverviewRow()}
 
     <div class="grid ov-grid" style="margin-top:12px">
       <div class="card"><h3>বিক্রির ধারা <small id="trendNote"></small></h3><div class="chart-box"><canvas id="trend"></canvas></div></div>
@@ -1758,6 +1787,7 @@ function showRetailer(i) {
       <button class="act primary" data-invfor="${i}">＋ Invoice</button>
       <button class="act primary" data-payfor="${i}">৳ Payment যোগ</button>
       <button class="act" data-stmt="${i}">Statement / WhatsApp</button>
+      <button class="act" data-cpnew="${i}">📣 Campaign</button>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
       ${r.phone ? `<a class="call" href="tel:${esc(r.phone)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>${esc(r.phone)}</a>` : ""}
@@ -1770,6 +1800,7 @@ function showRetailer(i) {
       <div class="tile c-gold"><div class="k">মোট কেনা</div><div class="v num">${tk(r.buyAll)}</div><div class="s">${r.invAll.size} invoice</div></div>
       <div class="tile c-green"><div class="k">মোট পরিশোধ</div><div class="v num">${tk(r.paidAll)}</div><div class="s">শেষ: ${dLabel(r.lastPay)}</div></div>
     </div>
+    ${cpRetailerCard(i)}
     <div class="card" style="margin-top:12px"><h3>শেষ ৬ মাস</h3>
       <div class="mini-bars">${months.map(m => `<div title="${tk(mAmt[m])}"><i style="height:${(mAmt[m] / mMax * 100).toFixed(1)}%"></i><span>${BN_M[+m.slice(5) - 1]}</span></div>`).join("")}</div>
     </div>
@@ -1892,6 +1923,360 @@ function submitPayment() {
     setTimeout(() => done(D), 300);
   }
 }
+
+/* ═══════════════ Campaign ═══════════════ */
+// রিটেইলারকে দেওয়া প্রচারণার টাকা — আলাদা খরচ, retailer-এর due / Payment / বিবরণীতে আসে না (সার্ভার: Campaign.js)
+// D.campaigns: { id, r, name, kind: "m"|"b", amt, from, to, on, note } · D.campaignPays: [id, campaignId, date, amt, month, method, note]
+const nowMonth = () => ymd(today()).slice(0, 7);
+const mShift = (k, n) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const cpMoney = v => Number(String(v ?? "").replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/[^\d.]/g, ""));
+
+function cpInfo(c) {
+  const pays = D.campaignPays.filter(p => p[1] === c.id).sort((a, b) => (b[2] || "").localeCompare(a[2] || ""));
+  const paid = pays.reduce((a, p) => a + p[3], 0);
+  if (c.kind !== "m") {
+    const left = c.on ? Math.max(0, c.amt - paid) : 0;
+    return { pays, paid, total: c.amt, left, byM: {}, months: [], dueMonths: [], due: 0, rest: () => 0, done: !c.on || left <= 0 };
+  }
+  const now = nowMonth(), byM = {};
+  pays.forEach(p => { if (p[4]) byM[p[4]] = (byM[p[4]] || 0) + p[3]; });
+  const months = [];
+  if (c.from) { const end = c.to || (now > c.from ? now : c.from); for (let m = c.from; m <= end && months.length < 600; m = mShift(m, 1)) months.push(m); }
+  const rest = m => Math.max(0, c.amt - (byM[m] || 0));
+  const left = c.on ? months.reduce((a, m) => a + rest(m), 0) : 0;
+  const dueMonths = c.on ? months.filter(m => m <= now && rest(m) > 0) : [];
+  return { pays, paid, total: c.to ? months.length * c.amt : null, left, byM, months, dueMonths,
+    due: dueMonths.reduce((a, m) => a + rest(m), 0), rest, done: !c.on || (!!c.to && left <= 0) };
+}
+// ফিল্টারে বাছাই করা retailer-দের campaign, হিসাবসহ
+const cpList = () => { const rs = idxSet(S.retailers, D.retailers); return D.campaigns.filter(c => !rs || rs.has(c.r)).map(c => ({ ...c, x: cpInfo(c) })); };
+const cpSpan = c => c.kind !== "m" ? (c.to ? `${mLabel(c.from)} – ${mLabel(c.to)}` : `${mLabel(c.from)} থেকে`)
+  : c.to ? `${mLabel(c.from)} – ${mLabel(c.to)}` : `${mLabel(c.from)} থেকে চলছে`;
+const cpMonthsText = ms => ms.length > 3 ? `${ms.length} মাস` : ms.map(m => BN_M[+m.slice(5) - 1]).join(", ");
+const cpStat = (k, v, col) => `<div class="stat"><div class="k">${k}</div><div class="v num"${col ? ` style="color:var(--${col})"` : ""}>${tk(v)}</div></div>`;
+
+// মাসের ঘরগুলো। full = ভেতরের পাতা: সব মাস, বাকি মাসে চাপলে টাকা দেওয়ার ফর্ম। না হলে চলতি মাসের আশেপাশের ৬টা।
+function cpStrip(c, x, full) {
+  if (c.kind !== "m" || !x.months.length) return "";
+  const now = nowMonth();
+  let ms = x.months.slice();
+  if (!c.to) { let m = ms[ms.length - 1]; while (ms.length < 6) { m = mShift(m, 1); ms.push(m); } }
+  if (!full && ms.length > 6) {
+    let i = ms.indexOf(now); if (i < 0) i = now < ms[0] ? 0 : ms.length - 1;
+    const s = Math.max(0, Math.min(i - 3, ms.length - 6));
+    ms = ms.slice(s, s + 6);
+  }
+  const years = new Set(ms.map(m => m.slice(0, 4))).size > 1;
+  return `<div class="mstrip">${ms.map(m => {
+    const rest = x.rest(m), got = x.byM[m] || 0;
+    const cls = rest <= 0 ? "paid" : got > 0 ? "part" : c.on && m <= now ? "due" : "";
+    const txt = rest <= 0 ? "✓" : got > 0 ? "আংশিক" : c.on && m <= now ? "বাকি" : "—";
+    const label = `<b>${BN_M[+m.slice(5) - 1]}${years ? " " + m.slice(2, 4) : ""}</b>${txt}`;
+    return full && c.on && rest > 0
+      ? `<button class="m ${cls}" data-cpaym="${esc(m)}" data-id="${esc(c.id)}" title="${esc(mLabel(m))}-এর টাকা দিন">${label}</button>`
+      : `<div class="m ${cls}">${label}</div>`;
+  }).join("")}</div>`;
+}
+
+function cpCard(c) {
+  const x = c.x, n = D.retailers[c.r].name, monthly = c.kind === "m";
+  const pill = !c.on ? `<span class="pill mute">বন্ধ</span>` : x.done ? `<span class="pill mute">শেষ</span>`
+    : `<span class="pill ${monthly ? "pos" : "warn"}">${CP_LABEL[c.kind]}</span>`;
+  const stats = monthly
+    ? (c.to ? cpStat("মোট চুক্তি", x.total) : cpStat("প্রতি মাসে", c.amt)) + cpStat("দেওয়া", x.paid, "pos") + cpStat(c.to ? "বাকি" : "এ পর্যন্ত বাকি", x.left, x.left > 0 ? "neg" : "pos")
+    : cpStat("বাজেট", c.amt) + cpStat("দেওয়া", x.paid, "pos") + cpStat("বাকি", x.left, x.left > 0 ? "neg" : "pos");
+  const last = x.pays[0];
+  const extra = monthly ? cpStrip(c, x)
+    : `<div class="paidbar" style="margin-top:11px"><i style="width:${c.amt ? Math.min(100, x.paid / c.amt * 100).toFixed(1) : 0}%"></i></div>
+       <div class="cp-foot"><span>${last ? `শেষ দেওয়া ${dLabel(last[2])}` : "এখনো দেওয়া হয়নি"}</span><span>${esc(last ? last[5] : "")}</span></div>`;
+  return `<div class="rcard" data-cp="${esc(c.id)}" style="--rc:${avColor(n)}">
+    <div class="head"><div class="avatar" style="${avStyle(n)}">${esc(initials(n))}</div>
+      <div class="main" style="flex:1;min-width:0"><div class="t1" style="font-weight:600;font-size:15px">${esc(n)}</div>
+      <div class="t2" style="font-size:12.5px;color:var(--ink-3)">${esc(c.name)} · ${cpSpan(c)}</div></div>${pill}</div>
+    <div class="stats">${stats}</div>${extra}</div>`;
+}
+const CP_LABEL = { m: "মাসিক", b: "এককালীন" };
+const CP_FILTERS = [["all", "সব"], ["m", "মাসিক"], ["b", "এককালীন"], ["done", "শেষ হয়েছে"]];
+
+function renderCampaign() {
+  const list = cpList(), byId = Object.fromEntries(list.map(c => [c.id, c]));
+  const [f, t] = range(); const fs = f ? ymd(f) : "", ts = t ? ymd(t) : "";
+  const inRange = D.campaignPays.filter(p => byId[p[1]] && (!fs || (p[2] && p[2] >= fs)) && (!ts || (p[2] && p[2] <= ts)));
+  const given = inRange.reduce((a, p) => a + p[3], 0);
+  const dues = list.filter(c => c.x.dueMonths.length).sort((a, b) => b.x.due - a.x.due);
+  const due = dues.reduce((a, c) => a + c.x.due, 0);
+  const running = list.filter(c => !c.x.done);
+  const nM = running.filter(c => c.kind === "m").length, total = list.reduce((a, c) => a + c.x.paid, 0);
+  const people = new Set(list.filter(c => c.x.paid > 0).map(c => c.r)).size;
+  const shown = list.filter(c => S.cpF === "all" ? true : S.cpF === "done" ? c.x.done : c.kind === S.cpF)
+    .sort((a, b) => a.x.done - b.x.done || b.x.due - a.x.due || b.x.left - a.x.left || b.from.localeCompare(a.from));
+  const nowName = BN_MONTH[today().getMonth()];
+  setHTML($("#v-campaign"), `
+    <div class="tiles" style="margin-top:12px">
+      <div class="tile c-violet"><div class="k">দেওয়া হয়েছে · ${esc(periodText())}</div><div class="v num">${tk(given)}</div><div class="s">${inRange.length}টি লেনদেন</div></div>
+      <div class="tile c-red"><div class="k">${nowName} পর্যন্ত দিতে বাকি</div><div class="v num">${tk(due)}</div><div class="s">${dues.length}টি মাসিক campaign</div></div>
+      <div class="tile c-gold"><div class="k">চলমান campaign</div><div class="v num">${running.length}</div><div class="s">${nM}টি মাসিক · ${running.length - nM}টি এককালীন</div></div>
+      <div class="tile c-green"><div class="k">শুরু থেকে মোট দেওয়া</div><div class="v num">${tk(total)}</div><div class="s">${people} জন রিটেইলার</div></div>
+    </div>
+    ${dues.length ? `<div class="section-title">দিতে হবে · ${nowName} পর্যন্ত</div>
+    <div class="card"><div class="list">${dues.map(c => { const n = D.retailers[c.r].name; return `
+      <div class="row cp-due" data-cp="${esc(c.id)}"><div class="avatar" style="${avStyle(n)}">${esc(initials(n))}</div>
+        <div class="main"><div class="t1">${esc(n)} · ${esc(c.name)}</div><div class="t2">মাসিক ${tk(c.amt)} · ${cpMonthsText(c.x.dueMonths)} বাকি</div></div>
+        <div class="end t1 num">${tk(c.x.due)}</div><button class="cp-go" data-cpgive="${esc(c.id)}">দেওয়া হলো</button></div>`; }).join("")}</div></div>` : ""}
+    <div class="cp-tools">
+      <div class="seg">${CP_FILTERS.map(([k, l]) => `<button class="${S.cpF === k ? "on" : ""}" data-cpf="${k}">${l}</button>`).join("")}</div>
+      <button class="act primary" data-cpnew="">＋ নতুন Campaign</button>
+    </div>
+    <div class="rcards">${shown.length ? shown.map(cpCard).join("") : `<div class="card empty">${D.campaigns.length ? "এই তালিকায় কোনো campaign নেই" : "এখনো কোনো campaign যোগ করা হয়নি"}</div>`}</div>`);
+}
+
+// সংক্ষিপ্ত চিত্রে ঢোকার পথ — ফোনের নিচের সারিতে আর জায়গা নেই
+function cpOverviewRow() {
+  const list = cpList(), due = list.reduce((a, c) => a + c.x.due, 0), running = list.filter(c => !c.x.done).length;
+  return `<div class="card" data-view="campaign" style="margin-top:12px;cursor:pointer;padding-top:4px;padding-bottom:4px">
+    <div class="row"><div class="avatar" style="background:linear-gradient(140deg,#7048e8,#ae3ec9)">📣</div>
+      <div class="main"><div class="t1">Campaign</div><div class="t2">${list.length ? `${running}টি চলমান · রিটেইলারকে দেওয়া প্রচারণার টাকা` : "রিটেইলারকে দেওয়া প্রচারণার টাকার হিসাব"}</div></div>
+      <div class="end">${due > 0 ? `<span class="pill neg num">${tk(due)} বাকি</span>` : `<span style="color:var(--ink-3)">›</span>`}</div></div></div>`;
+}
+
+// রিটেইলারের পপআপে তার campaign
+function cpRetailerCard(i) {
+  const list = D.campaigns.filter(c => c.r === i).map(c => ({ ...c, x: cpInfo(c) })).sort((a, b) => a.x.done - b.x.done);
+  if (!list.length) return "";
+  const total = list.reduce((a, c) => a + c.x.paid, 0);
+  return `<div class="card" style="margin-top:12px"><h3>Campaign <small class="num">মোট দেওয়া ${tk(total)}</small></h3>
+    <div class="list">${list.map(c => `<div data-cp="${esc(c.id)}" style="cursor:pointer">
+      <div class="row" style="border-top:0;padding-bottom:0"><div class="main"><div class="t1">${esc(c.name)}</div><div class="t2">${c.kind === "m" ? `মাসিক ${tk(c.amt)}` : `বাজেট ${tk(c.amt)}`} · ${cpSpan(c)}</div></div>
+        <div class="end">${c.x.done ? `<span class="pill mute">${c.on ? "শেষ" : "বন্ধ"}</span>` : c.x.due > 0 ? `<span class="pill neg num">${tk(c.x.due)} বাকি</span>` : c.x.left > 0 ? `<span class="pill warn num">${tk(c.x.left)} বাকি</span>` : ""}</div></div>
+      ${c.x.done ? "" : cpStrip(c, c.x)}</div>`).join("")}</div></div>`;
+}
+
+// চলাকালীন বিক্রি বনাম আগের সমান সময় — Normal/Combo বা অন্য কোনো ফিল্টার ছাড়া, পুরো retailer
+function cpCompare(c, x) {
+  if (!c.from) return "";
+  const now = today(), start = parse(c.from + "-01");
+  if (start > now) return "";
+  let endK = c.to || nowMonth();
+  if (!c.on && x.pays.length && x.pays[0][2]) { const last = x.pays[0][2].slice(0, 7); if (last < endK) endK = last; }
+  const [ey, em] = endK.split("-").map(Number);
+  const end = new Date(ey, em, 0) > now ? now : new Date(ey, em, 0);
+  if (end < start) return "";
+  const days = Math.round((end - start) / 864e5) + 1;
+  const sum = (a, b) => { const p = ymd(a), q = ymd(b); return D.sales.reduce((s, v) => s + (v[0] === c.r && v[1] >= p && v[1] <= q ? v[7] : 0), 0); };
+  const during = sum(start, end), before = sum(addDays(start, -days), addDays(start, -1));
+  const pct = before > 0 ? (during - before) / before * 100 : null;
+  const cls = pct === null ? "" : Math.abs(pct) < 0.5 ? "flat" : pct > 0 ? "up" : "down";
+  return `<div class="card" style="margin-top:12px"><h3>Campaign চলাকালীন বিক্রি <small class="num">${dLabel(ymd(start))} – ${dLabel(ymd(end))}</small></h3>
+    <div class="cp-cmp"><div><small>Campaign চলাকালীন</small><b class="num">${tk(during)}</b></div><div><small>আগের সমান সময়ে</small><b class="num">${tk(before)}</b></div><div><small>খরচ বিক্রির</small><b class="num">${during > 0 ? (x.paid / during * 100).toFixed(1) + "%" : "—"}</b></div></div>
+    ${pct === null ? "" : `<div style="margin-top:9px"><span class="delta ${cls}">${pct > 0 ? "▲" : pct < 0 ? "▼" : "•"} ${Math.abs(pct).toFixed(0)}%</span></div>`}</div>`;
+}
+
+// একটা campaign-এর ভেতরের পাতা
+function showCampaign(id) {
+  const c = D.campaigns.find(k => k.id === id);
+  if (!c) throw new Error("campaign নেই");
+  sheetPage(() => showCampaign(id));
+  const x = cpInfo(c), monthly = c.kind === "m", last = x.pays[0];
+  const tile1 = monthly
+    ? (c.to ? `<div class="k">মোট চুক্তি · ${x.months.length} মাস</div><div class="v num">${tk(x.total)}</div><div class="s">প্রতি মাসে ${tk(c.amt)}</div>`
+            : `<div class="k">প্রতি মাসে</div><div class="v num">${tk(c.amt)}</div><div class="s">${cpSpan(c)}</div>`)
+    : `<div class="k">মোট বাজেট</div><div class="v num">${tk(c.amt)}</div><div class="s">${cpSpan(c)}</div>`;
+  openSheet(`${c.name} · ${D.retailers[c.r].name}`, `
+    <div class="actions">
+      ${c.on ? `<button class="act primary" data-cpgive="${esc(id)}">＋ টাকা দেওয়া হলো</button>` : ""}
+      <button class="act" data-cpedit="${esc(id)}">সংশোধন</button>
+      <button class="act" data-cponoff="${esc(id)}">${c.on ? "বন্ধ করুন" : "আবার চালু করুন"}</button>
+      <button class="act danger" data-cpdel="${esc(id)}">মুছুন</button>
+    </div>
+    <div class="tiles">
+      <div class="tile c-gold">${tile1}</div>
+      <div class="tile c-green"><div class="k">দেওয়া হয়েছে</div><div class="v num">${tk(x.paid)}</div><div class="s">${x.pays.length}টি লেনদেন</div></div>
+      <div class="tile c-red"><div class="k">${monthly && !c.to ? "এ পর্যন্ত বাকি" : "বাকি"}</div><div class="v num">${tk(x.left)}</div><div class="s">${!c.on ? "বন্ধ করা — আর দিতে হবে না" : x.dueMonths.length ? `${cpMonthsText(x.dueMonths)} বাকি` : x.left > 0 ? "এখনো সময় হয়নি" : "সব দেওয়া হয়েছে"}</div></div>
+      <div class="tile c-violet"><div class="k">সবশেষ দেওয়া</div><div class="v num">${last ? dLabel(last[2]) : "—"}</div><div class="s">${esc(last ? last[5] : "এখনো দেওয়া হয়নি")}</div></div>
+    </div>
+    ${monthly ? `<div class="card" style="margin-top:12px"><h3>মাসের হিসাব</h3>${cpStrip(c, x, true)}</div>` : ""}
+    ${cpCompare(c, x)}
+    ${c.note ? `<div class="card" style="margin-top:12px"><h3>নোট</h3><div style="font-size:14px;overflow-wrap:anywhere">${esc(c.note)}</div></div>` : ""}
+    <div class="section-title">লেনদেন</div>
+    <div class="card"><div class="list">${x.pays.length ? x.pays.map(p => `
+      <div class="row" style="cursor:default"><div class="main"><div class="t1 num">${tk(p[3])}</div><div class="t2">${esc([p[4] ? mLabel(p[4]) + "-এর" : "", p[5], p[6]].filter(Boolean).join(" · ") || "—")}</div></div>
+        <div class="end t2">${dLabel(p[2])}</div><button class="cp-x" data-cppaydel="${esc(p[0])}" data-id="${esc(id)}" aria-label="মুছুন" title="এই লেনদেন মুছুন">✕</button></div>`).join("")
+      : `<div class="empty">কোনো লেনদেন নেই</div>`}</div></div>`);
+}
+
+// নতুন বা সংশোধন
+let cpDraft = null;
+function showCampaignForm(r, id) {
+  const c = id ? D.campaigns.find(k => k.id === id) : null;
+  const one = S.retailers.length === 1 ? D.retailers.findIndex(k => k.name === S.retailers[0]) : -1;
+  cpDraft = c ? { id: c.id, r: c.r, kind: c.kind, name: c.name, amt: c.amt, from: c.from, to: c.to, note: c.note }
+    : { r: r != null ? r : one, kind: "m", name: "", amt: "", from: nowMonth(), to: "", note: "", first: "", date: ymd(today()), method: "Cash" };
+  openSheet(c ? "Campaign সংশোধন" : "নতুন Campaign", cpFormBody(),
+    `<button class="btn ghost" id="cpCancel">বাতিল</button><button class="btn primary" id="cpSaveBtn">সেভ করুন</button>`);
+  cpFormSum();
+}
+const cpChips = (cur) => `<div class="chips" style="flex-wrap:wrap">${["Cash", "bKash", "Nagad", "Bank", "Cheque"].map(m =>
+  `<button class="chip ${cur === m ? "on" : ""}" data-cpmethod="${m}">${m}</button>`).join("")}</div>`;
+function cpFormBody() {
+  const d = cpDraft, monthly = d.kind === "m", edit = !!d.id;
+  return `
+    ${edit ? "" : `<div class="seg cp-kind"><button class="${monthly ? "on" : ""}" data-cpkind="m">মাসিক</button><button class="${monthly ? "" : "on"}" data-cpkind="b">এককালীন বাজেট</button></div>`}
+    <div class="field"><label>Retailer</label>
+      <select id="cpShop" ${edit ? "disabled" : ""}><option value="-1">— বাছাই করুন —</option>
+        ${D.retailers.map((x, k) => `<option value="${k}" ${k === d.r ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div>
+    <div class="field"><label>Campaign-এর নাম</label><input id="cpName" placeholder="${monthly ? "যেমন: ফেসবুক প্রচারণা" : "যেমন: এসএসসি মৌসুমের বাজেট"}" autocomplete="off" value="${esc(d.name)}"></div>
+    <div class="field"><label>${monthly ? "প্রতি মাসে টাকা (৳)" : "মোট বাজেট (৳)"}</label><input id="cpAmt" class="amount-input" inputmode="decimal" placeholder="0" autocomplete="off" value="${esc(d.amt)}">
+      ${edit && monthly ? `<small style="color:var(--warn)">টাকা বদলালে আগের মাসগুলোও নতুন অঙ্কে হিসাব হবে। মাঝপথে টাকা বদলালে এটায় শেষের মাস দিয়ে নতুন Campaign খুলুন।</small>` : ""}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>শুরুর মাস</label><input id="cpFrom" type="month" value="${esc(d.from)}"></div>
+      <div class="field"><label>শেষের মাস (ঐচ্ছিক)</label><input id="cpTo" type="month" value="${esc(d.to)}"></div>
+    </div>
+    <div class="cp-sum num" id="cpSum"></div>
+    ${!monthly && !edit ? `
+    <div class="field"><label>এখন কত দেওয়া হলো (৳)</label><input id="cpFirst" class="amount-input" inputmode="decimal" placeholder="0" autocomplete="off" value="${esc(d.first)}">
+      <small style="color:var(--ink-3)">পরে ভাগে ভাগে দিলে বাকিটা তখন যোগ করা যাবে</small></div>
+    <div class="field"><label>তারিখ</label><input id="cpDate" type="date" value="${esc(d.date)}"></div>
+    <div class="field"><label>মাধ্যম</label>${cpChips(d.method)}</div>` : ""}
+    <div class="field"><label>নোট (ঐচ্ছিক)</label><input id="cpNote" placeholder="যেমন: কোন পেজ, কার সাথে কথা" value="${esc(d.note)}"></div>`;
+}
+// ধরন বদলালে লেখা যেন না হারায়
+function cpFormRead() {
+  const d = cpDraft, val = s => { const e = $(s); return e ? e.value : ""; };
+  d.r = +val("#cpShop"); d.name = val("#cpName"); d.amt = val("#cpAmt"); d.from = val("#cpFrom"); d.to = val("#cpTo"); d.note = val("#cpNote");
+  if ($("#cpFirst")) { d.first = val("#cpFirst"); d.date = val("#cpDate"); }
+}
+function cpFormSum() {
+  const el = $("#cpSum"); if (!el || !cpDraft) return;
+  const amt = cpMoney($("#cpAmt").value), from = $("#cpFrom").value, to = $("#cpTo").value;
+  if (cpDraft.kind !== "m" || !amt || !from) { el.textContent = ""; return; }
+  if (!to) { el.textContent = `প্রতি মাসে ${tk(amt)} · শেষের মাস না দিলে চলতেই থাকবে`; return; }
+  if (to < from) { el.textContent = "শেষের মাস শুরুর মাসের আগে হতে পারে না"; return; }
+  const [a, b] = from.split("-").map(Number), [p, q] = to.split("-").map(Number), n = (p - a) * 12 + q - b + 1;
+  el.textContent = `${n} মাস × ${tk(amt)} = মোট ${tk(n * amt)}`;
+}
+function cpSubmitForm(btn) {
+  cpFormRead();
+  const d = cpDraft, amt = cpMoney(d.amt), first = cpMoney(d.first);
+  if (d.r < 0) return toast("Retailer বাছাই করুন");
+  if (!d.name.trim()) return toast("Campaign-এর নাম লিখুন");
+  if (!(amt > 0)) return toast("টাকার অংক দিন");
+  if (!d.from) return toast("শুরুর মাস দিন");
+  if (d.to && d.to < d.from) return toast("শেষের মাস শুরুর মাসের আগে হতে পারে না");
+  if (d.kind === "b" && first > amt) return toast("দেওয়া টাকা বাজেটের চেয়ে বেশি");
+  const p = { id: d.id || "", retailer: D.retailers[d.r].name, kind: d.kind, name: d.name.trim(), amount: amt, from: d.from, to: d.to, note: d.note };
+  if (d.kind === "b" && first > 0) p.first = { amount: first, date: d.date, method: d.method };
+  cpCall("cpSave", [p], btn, `✓ ${p.name} সেভ হয়েছে`);
+}
+
+// টাকা দেওয়া
+let cpGive = null;
+function showCampaignPay(id, month) {
+  const c = D.campaigns.find(k => k.id === id);
+  if (!c) throw new Error("campaign নেই");
+  const x = cpInfo(c), monthly = c.kind === "m";
+  let opts = [], picked = [];
+  if (monthly) {
+    opts = x.months.filter(m => x.rest(m) > 0);
+    if (!c.to) { let m = x.months[x.months.length - 1]; for (let k = 0; k < 3; k++) { m = mShift(m, 1); opts.push(m); } }
+    picked = month ? [month] : x.dueMonths.length ? x.dueMonths.slice() : opts.slice(0, 1);
+    picked.forEach(m => { if (!opts.includes(m)) opts.push(m); });
+    opts.sort();
+  }
+  const amount = monthly ? (picked.length === 1 ? x.rest(picked[0]) : c.amt) : x.left;
+  cpGive = { c, x, opts, picked, method: "Cash", touched: false };
+  openSheet(`টাকা দেওয়া · ${c.name}`, `
+    <div style="font-size:13px;color:var(--ink-3);margin-bottom:12px">${esc(D.retailers[c.r].name)} · ${monthly ? `মাসিক ${tk(c.amt)}` : `বাজেট ${tk(c.amt)}, বাকি ${tk(x.left)}`}</div>
+    ${monthly ? `<div class="field"><label>কোন মাসের টাকা</label><div class="chips" style="flex-wrap:wrap" id="cpMonths">${opts.map(m => `<button class="chip ${picked.includes(m) ? "on" : ""}" data-cpmonth="${esc(m)}">${esc(mLabel(m))}</button>`).join("")}</div></div>` : ""}
+    <div class="field"><label>${monthly ? "প্রতি মাসের টাকা (৳)" : "কত দেওয়া হলো (৳)"}</label><input id="cpPayAmt" class="amount-input" inputmode="decimal" placeholder="0" autocomplete="off" value="${amount > 0 ? amount : ""}"></div>
+    <div class="cp-sum num" id="cpPaySum"></div>
+    <div class="field"><label>তারিখ</label><input id="cpPayDate" type="date" value="${ymd(today())}"></div>
+    <div class="field"><label>মাধ্যম</label>${cpChips("Cash")}</div>
+    <div class="field"><label>নোট (ঐচ্ছিক)</label><input id="cpPayNote" placeholder="যেমন: ট্রানজেকশন নম্বর"></div>`,
+    `<button class="btn ghost" id="cpCancel">বাতিল</button><button class="btn primary" id="cpPayBtn">দেওয়া হলো</button>`);
+  cpPaySum();
+}
+function cpPaySum() {
+  const el = $("#cpPaySum"); if (!el || !cpGive) return;
+  const n = cpGive.picked.length, amt = cpMoney($("#cpPayAmt").value);
+  el.textContent = cpGive.c.kind === "m" && n > 1 && amt ? `${n} মাস × ${tk(amt)} = মোট ${tk(n * amt)}` : "";
+}
+function cpSubmitPay(btn) {
+  const g = cpGive, amt = cpMoney($("#cpPayAmt").value), monthly = g.c.kind === "m";
+  if (!(amt > 0)) return toast("টাকার অংক দিন");
+  if (monthly && !g.picked.length) return toast("কোন মাসের টাকা, বাছাই করুন");
+  if (!monthly && amt > g.x.left && !confirm(`এটা বাজেটের বাকি ${tk(g.x.left)}-এর চেয়ে বেশি। তবু রাখবেন?`)) return;
+  const n = monthly ? g.picked.length : 1;
+  cpCall("cpPay", [{ id: g.c.id, amount: amt, date: $("#cpPayDate").value, method: g.method, note: $("#cpPayNote").value, months: monthly ? g.picked.slice().sort() : [] }],
+    btn, `✓ ${D.retailers[g.c.r].name} — ${tk(amt * n)} দেওয়া হলো`);
+}
+
+// সার্ভারে পাঠানো; সফল হলে নতুন হিসাব। after না দিলে এই পাতা বন্ধ হয়ে আগেরটায় ফেরে।
+function cpCall(fn, args, btn, okMsg, after) {
+  const lbl = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "সেভ হচ্ছে…"; }
+  const reset = () => { if (btn) { btn.disabled = false; btn.textContent = lbl; } };
+  if (!(window.google && google.script && google.script.run)) { reset(); return toast("ডেমোতে সেভ হয় না"); }
+  google.script.run.withFailureHandler(err => {
+    reset();
+    if (needKey(err, () => cpCall(fn, args, btn, okMsg, after))) return;
+    toast("❌ " + (err && err.message || err));
+  }).withSuccessHandler(json => {
+    useData(typeof json === "string" ? JSON.parse(json) : json);
+    if (after) after(); else closeSheet();
+    render();
+    toast(okMsg);
+  })[fn](...args, ownerKey());
+}
+// একই ভেতরের পাতা নতুন হিসাব নিয়ে আবার আঁকা (ফেরার তালিকায় বাড়তি ধাপ না জমিয়ে)
+function cpStay(id) { SH.back = true; try { showCampaign(id); } finally { SH.back = false; } }
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-cpopen],[data-cpgive],[data-cpnew],[data-cpf],[data-cpaym],[data-cpkind],[data-cpmonth],[data-cpmethod],[data-cpedit],[data-cponoff],[data-cpdel],[data-cppaydel],[data-cp],#cpSaveBtn,#cpPayBtn,#cpCancel");
+  if (!b) return;
+  const d = b.dataset;
+  if (d.cpopen !== undefined) closeSheet(true);   // "নতুন" মেনু বন্ধ — পাতা বদলায় নিচের data-view
+  else if (d.cpgive) showCampaignPay(d.cpgive);
+  else if (d.cpaym) showCampaignPay(d.id, d.cpaym);
+  else if (d.cpnew !== undefined) showCampaignForm(d.cpnew === "" ? null : +d.cpnew);
+  else if (d.cpf) { S.cpF = d.cpf; renderCampaign(); }
+  else if (d.cpkind) { cpFormRead(); cpDraft.kind = d.cpkind; $("#sheetBody").innerHTML = cpFormBody(); cpFormSum(); }
+  else if (d.cpmonth) {
+    const g = cpGive, k = g.picked.indexOf(d.cpmonth);
+    if (k >= 0) g.picked.splice(k, 1); else g.picked.push(d.cpmonth);
+    b.classList.toggle("on", k < 0);
+    if (!g.touched) $("#cpPayAmt").value = g.picked.length === 1 ? g.x.rest(g.picked[0]) : g.c.amt;
+    cpPaySum();
+  }
+  else if (d.cpmethod) {
+    if ($("#cpPayBtn")) cpGive.method = d.cpmethod; else cpDraft.method = d.cpmethod;
+    document.querySelectorAll("[data-cpmethod]").forEach(x => x.classList.toggle("on", x.dataset.cpmethod === d.cpmethod));
+  }
+  else if (d.cpedit) showCampaignForm(null, d.cpedit);
+  else if (d.cponoff) {
+    const c = D.campaigns.find(k => k.id === d.cponoff);
+    if (c.on && !confirm(`"${c.name}" বন্ধ করবেন? এরপর আর কিছু দিতে হবে না, এতদিনের লেনদেন থেকে যাবে।`)) return;
+    cpCall("cpSetOn", [c.id, !c.on], null, c.on ? "✓ বন্ধ করা হয়েছে" : "✓ আবার চালু হয়েছে", () => cpStay(c.id));
+  }
+  else if (d.cpdel) {
+    const c = D.campaigns.find(k => k.id === d.cpdel), x = cpInfo(c);
+    if (!confirm(`"${c.name}" পুরোটা মুছবেন?${x.pays.length ? ` এর ${x.pays.length}টি লেনদেন (${tk(x.paid)})-ও মুছে যাবে।` : ""} ফেরত আনা যাবে না।`)) return;
+    cpCall("cpDelete", [c.id], b, "✓ মুছে ফেলা হয়েছে");
+  }
+  else if (d.cppaydel) {
+    const p = D.campaignPays.find(k => k[0] === d.cppaydel);
+    if (!p || !confirm(`${tk(p[3])}-এর এই লেনদেন মুছবেন?`)) return;
+    cpCall("cpPayDelete", [p[0]], null, "✓ লেনদেন মুছে ফেলা হয়েছে", () => cpStay(d.id));
+  }
+  else if (b.id === "cpSaveBtn") cpSubmitForm(b);
+  else if (b.id === "cpPayBtn") cpSubmitPay(b);
+  else if (b.id === "cpCancel") closeSheet();
+  else if (d.cp) showCampaign(d.cp);
+});
+document.addEventListener("input", e => {
+  const id = e.target.id;
+  if (id === "cpAmt" || id === "cpFrom" || id === "cpTo") cpFormSum();
+  else if (id === "cpPayAmt") { if (cpGive) cpGive.touched = true; cpPaySum(); }
+});
 
 /* ── Statement PDF + WhatsApp ── */
 // r = retailer-এর ক্রম, null = সব retailer মিলিয়ে সমন্বিত বিবরণী
@@ -2641,6 +3026,7 @@ function showNewMenu() {
     <div class="choice">
       <button data-newinv><i>＋</i><div>নতুন Invoice<span>যেকোনো retailer-এর — বই, Qty, Discount দিয়ে Save, PDF ও WhatsApp</span></div></button>
       <button data-newpay><i>৳</i><div>Payment যোগ<span>retailer-এর কাছ থেকে পাওয়া টাকা</span></div></button>
+      <button data-view="campaign" data-cpopen><i>📣</i><div>Campaign<span>রিটেইলারকে দেওয়া প্রচারণার টাকা — মাসিক বা এককালীন</span></div></button>
       <button data-newprod><i>✚</i><div>নতুন বই যোগ<span>Master PriceList-এ যোগ হয়ে সব retailer ফাইলে চলে যাবে</span></div></button>
       <button data-stall><i>≡</i><div>সমন্বিত বিবরণী<span>সব retailer মিলিয়ে — দিন / মাস / বছর ধরে, ব্যাংকে জমা দেওয়ার মতো PDF</span></div></button>
       ${invoiceAppUrl() ? `<a href="${esc(invoiceAppUrl())}" target="_top" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-decoration:none;color:inherit;font-weight:600;font-size:15px">
