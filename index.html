@@ -1254,12 +1254,15 @@ const PDF_DIR = {
   async root(pick) {
     const h = pick ? null : await this.get(), o = { mode: "readwrite" };
     if (h && (await h.queryPermission(o) === "granted" || await h.requestPermission(o) === "granted")) return h;
-    if (!pick) toast("📁 Invoice PDF রাখার মূল ফোল্ডারটা বাছাই করুন — ভেতরে retailer-এর নামে ফোল্ডার নিজে হবে");
+    if (!pick) toast(`📁 ${PDF_HOME} ফোল্ডারটা বাছাই করুন (D: › 01 Office Work › Retailer Invoices)`);
     const n = await window.showDirectoryPicker({ id: "inv-pdf", mode: "readwrite", startIn: "documents" });
+    // ভুল করে কোনো retailer-এর ফোল্ডার বা অন্য ফোল্ডার বাছলে জিজ্ঞেস
+    if (n.name !== PDF_HOME && !confirm(`বাছাই করা ফোল্ডার "${n.name}" — সাধারণত "${PDF_HOME}" বাছাই করা হয়।\nএর ভেতরেই retailer-এর নামে ফোল্ডারে PDF যাবে। ঠিক আছে?`)) throw new DOMException("বাতিল", "AbortError");
     await this.set(n);
     return n;
   }
 };
+const PDF_HOME = "Retailer Invoices";   // ল্যাপটপে D:\01 Office Work\Retailer Invoices — ভেতরে retailer-এর নামে ফোল্ডার
 const safeName_ = s => String(s || "").replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").replace(/[. ]+$/, "").trim() || "PDF";
 function b64Blob_(b64) {
   const bin = atob(b64), u8 = new Uint8Array(bin.length);
@@ -1272,10 +1275,25 @@ function plainDownload_(blob, name) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 }
-async function writePdf_(root, retailer, name, blob) {
-  const dir = await root.getDirectoryHandle(safeName_(retailer), { create: true });
+// retailer-এর ফোল্ডার: মূল ফোল্ডারে আগে থেকে থাকা ফোল্ডার নাম মিলিয়ে (বড়/ছোট হাতের অক্ষর, ফাঁকা, চিহ্ন বাদ — eJanani = Ejanani);
+// না পেলে retailer-এর নামে নতুন ফোল্ডার
+const normName_ = s => String(s || "").toLowerCase().replace(/[^a-z0-9\u0980-\u09ff]/g, "");
+async function retailerDir_(root, retailer) {
+  const want = normName_(retailer);
+  let near = null;
+  for await (const [n, h] of root.entries()) {
+    if (h.kind !== "directory") continue;
+    const k = normName_(n);
+    if (k === want) return h;
+    if (!near && k.length >= 4 && want.length >= 4 && (k.startsWith(want) || want.startsWith(k))) near = h;
+  }
+  return near || root.getDirectoryHandle(safeName_(retailer), { create: true });
+}
+async function writePdf_(root, retailer, name, blob, dir) {
+  dir = dir || await retailerDir_(root, retailer);
   const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
   await w.write(blob); await w.close();
+  return dir.name;
 }
 const pdfName_ = n => safeName_(String(n || "Invoice").replace(/\.pdf$/i, "")) + ".pdf";
 // সার্ভার ডাক Promise হিসেবে — password চাইলে জিজ্ঞেস করে আবার
@@ -1301,8 +1319,8 @@ async function savePdf(retailer, fn, args, btn) {
     const r = JSON.parse(await gsCall_(fn, args));
     const blob = b64Blob_(r.b64), name = pdfName_(r.name);
     if (root) {
-      await writePdf_(root, retailer, name, blob);
-      toast(`✓ ${root.name} › ${safeName_(retailer)} ফোল্ডারে সেভ হয়েছে`);
+      const where = await writePdf_(root, retailer, name, blob);
+      toast(`✓ ${root.name} › ${where} ফোল্ডারে সেভ হয়েছে`);
     } else { plainDownload_(blob, name); toast("✓ Download হয়েছে"); }
   } catch (e) { toast("❌ " + (e && e.message || e)); }
   finally { btn.innerHTML = lbl; delete btn.dataset.busy; }
@@ -1319,17 +1337,17 @@ async function syncRetailerPdfs(retailer, btn) {
   let done = 0, failed = 0;
   try {
     const list = JSON.parse(await gsCall_("retailerPdfList", [retailer]));
-    const dir = await root.getDirectoryHandle(safeName_(retailer), { create: true });
+    const dir = await retailerDir_(root, retailer);
     const have = new Set();
     for await (const k of dir.keys()) have.add(k);
     const need = list.filter(f => !have.has(pdfName_(f.name)));
-    if (!need.length) { toast(`✓ সব ${list.length}টা PDF আগেই ${safeName_(retailer)} ফোল্ডারে আছে`); return; }
+    if (!need.length) { toast(`✓ সব ${list.length}টা PDF আগেই ${dir.name} ফোল্ডারে আছে`); return; }
     for (const f of need) {
       btn.innerHTML = `⏳ ${done + failed + 1} / ${need.length}`;
-      try { const r = JSON.parse(await gsCall_("pdfFile", [f.id])); await writePdf_(root, retailer, pdfName_(f.name), b64Blob_(r.b64)); done++; }
+      try { const r = JSON.parse(await gsCall_("pdfFile", [f.id])); await writePdf_(root, retailer, pdfName_(f.name), b64Blob_(r.b64), dir); done++; }
       catch (e) { failed++; }
     }
-    toast(`✓ ${done}টা নতুন PDF ${root.name} › ${safeName_(retailer)} ফোল্ডারে` + (failed ? ` · ${failed}টা হয়নি` : ""));
+    toast(`✓ ${done}টা নতুন PDF ${root.name} › ${dir.name} ফোল্ডারে` + (failed ? ` · ${failed}টা হয়নি` : ""));
   } catch (e) { toast("❌ " + (e && e.message || e)); }
   finally { btn.innerHTML = lbl; delete btn.dataset.busy; }
 }
