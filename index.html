@@ -1227,6 +1227,123 @@ document.addEventListener("click", e => {
   printInvoice(b);
 }, true);
 
+/* ═══ ⬇ PDF সরাসরি কম্পিউটারের ফোল্ডারে — প্রতি retailer-এর নামে আলাদা ফোল্ডার ═══
+ * প্রথমবার একটা মূল ফোল্ডার বাছাই (যেমন D:\Invoice PDF); তার ভেতরে retailer-এর নামের ফোল্ডার নিজে তৈরি হয়,
+ * PDF সেখানে সেভ হয় (একই নামের পুরনোটা বদলে)। বাছাই করা ফোল্ডার ব্রাউজারে মনে থাকে (IndexedDB)।
+ * ফোন / Firefox-এ এই সুবিধা নেই — তখন সাধারণ Download। */
+const PDF_DIR = {
+  ok: "showDirectoryPicker" in window,
+  db() {
+    return new Promise((res, rej) => {
+      const q = indexedDB.open("inv-pdf-dir", 1);
+      q.onupgradeneeded = () => q.result.createObjectStore("kv");
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  },
+  async get() {
+    try {
+      const db = await this.db();
+      return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get("root"); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); });
+    } catch (e) { return null; }
+  },
+  async set(h) {
+    const db = await this.db();
+    await new Promise(res => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(h, "root"); t.oncomplete = res; t.onerror = res; });
+  },
+  // ক্লিকের মধ্যেই ডাকতে হয় — ব্রাউজার তখনই অনুমতি চাইতে দেয়। pick = নতুন ফোল্ডার বাছাই
+  async root(pick) {
+    const h = pick ? null : await this.get(), o = { mode: "readwrite" };
+    if (h && (await h.queryPermission(o) === "granted" || await h.requestPermission(o) === "granted")) return h;
+    if (!pick) toast("📁 Invoice PDF রাখার মূল ফোল্ডারটা বাছাই করুন — ভেতরে retailer-এর নামে ফোল্ডার নিজে হবে");
+    const n = await window.showDirectoryPicker({ id: "inv-pdf", mode: "readwrite", startIn: "documents" });
+    await this.set(n);
+    return n;
+  }
+};
+const safeName_ = s => String(s || "").replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").replace(/[. ]+$/, "").trim() || "PDF";
+function b64Blob_(b64) {
+  const bin = atob(b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: "application/pdf" });
+}
+function plainDownload_(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+async function writePdf_(root, retailer, name, blob) {
+  const dir = await root.getDirectoryHandle(safeName_(retailer), { create: true });
+  const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+  await w.write(blob); await w.close();
+}
+const pdfName_ = n => safeName_(String(n || "Invoice").replace(/\.pdf$/i, "")) + ".pdf";
+// সার্ভার ডাক Promise হিসেবে — password চাইলে জিজ্ঞেস করে আবার
+function gsCall_(fn, args) {
+  return new Promise((res, rej) => {
+    const run = () => google.script.run.withSuccessHandler(res)
+      .withFailureHandler(err => { if (!needKey(err, run)) rej(err); })[fn](...args, ownerKey());
+    run();
+  });
+}
+// একটা PDF: fn/args = সার্ভারের যে ফাংশন { name, b64 } দেয়
+async function savePdf(retailer, fn, args, btn) {
+  if (btn.dataset.busy) return;
+  if (!(window.google && google.script && google.script.run)) { toast("এটা web app থেকে খুলুন — এখানে শুধু দেখানো যায়"); return; }
+  let root = null;
+  if (PDF_DIR.ok) {
+    try { root = await PDF_DIR.root(); }
+    catch (e) { if (e && e.name === "AbortError") return; root = null; }
+  }
+  const lbl = btn.innerHTML;
+  btn.dataset.busy = "1"; btn.innerHTML = "⏳ নামানো হচ্ছে…";
+  try {
+    const r = JSON.parse(await gsCall_(fn, args));
+    const blob = b64Blob_(r.b64), name = pdfName_(r.name);
+    if (root) {
+      await writePdf_(root, retailer, name, blob);
+      toast(`✓ ${root.name} › ${safeName_(retailer)} ফোল্ডারে সেভ হয়েছে`);
+    } else { plainDownload_(blob, name); toast("✓ Download হয়েছে"); }
+  } catch (e) { toast("❌ " + (e && e.message || e)); }
+  finally { btn.innerHTML = lbl; delete btn.dataset.busy; }
+}
+// retailer-এর Drive ফোল্ডারের যে PDF কম্পিউটারের ফোল্ডারে এখনো নেই, সব নামানো
+async function syncRetailerPdfs(retailer, btn) {
+  if (btn.dataset.busy) return;
+  if (!PDF_DIR.ok) { toast("এই সুবিধা কম্পিউটারের Chrome / Edge-এ চলে"); return; }
+  if (!(window.google && google.script && google.script.run)) { toast("এটা web app থেকে খুলুন — এখানে শুধু দেখানো যায়"); return; }
+  let root;
+  try { root = await PDF_DIR.root(); } catch (e) { return; }
+  const lbl = btn.innerHTML;
+  btn.dataset.busy = "1"; btn.innerHTML = "⏳ তালিকা আনা হচ্ছে…";
+  let done = 0, failed = 0;
+  try {
+    const list = JSON.parse(await gsCall_("retailerPdfList", [retailer]));
+    const dir = await root.getDirectoryHandle(safeName_(retailer), { create: true });
+    const have = new Set();
+    for await (const k of dir.keys()) have.add(k);
+    const need = list.filter(f => !have.has(pdfName_(f.name)));
+    if (!need.length) { toast(`✓ সব ${list.length}টা PDF আগেই ${safeName_(retailer)} ফোল্ডারে আছে`); return; }
+    for (const f of need) {
+      btn.innerHTML = `⏳ ${done + failed + 1} / ${need.length}`;
+      try { const r = JSON.parse(await gsCall_("pdfFile", [f.id])); await writePdf_(root, retailer, pdfName_(f.name), b64Blob_(r.b64)); done++; }
+      catch (e) { failed++; }
+    }
+    toast(`✓ ${done}টা নতুন PDF ${root.name} › ${safeName_(retailer)} ফোল্ডারে` + (failed ? ` · ${failed}টা হয়নি` : ""));
+  } catch (e) { toast("❌ " + (e && e.message || e)); }
+  finally { btn.innerHTML = lbl; delete btn.dataset.busy; }
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-invdl],[data-pdfsave],[data-pdfsync],[data-pdfdir]");
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const d = b.dataset;
+  if (d.invdl !== undefined) savePdf(D.retailers[+d.invdl].name, "invoicePdfForPrint", [D.retailers[+d.invdl].name, d.no, d.date, true], b);
+  else if (d.pdfsave) savePdf(d.shop, "pdfFile", [d.pdfsave], b);
+  else if (d.pdfsync !== undefined) syncRetailerPdfs(D.retailers[+d.pdfsync].name, b);
+  else PDF_DIR.root(true).then(h => toast(`✓ এখন থেকে PDF যাবে: ${h.name} › <retailer-এর নাম>`)).catch(() => {});
+}, true);
+
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("on");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2600);
@@ -1704,6 +1821,7 @@ function invoiceCards(list) {
         <div class="line"><div class="ln">${esc(D.products[s[3]].name)}<small class="num">${nf(s[4])} × ${tk(s[5] * (1 - s[6]))} · ${(s[6] * 100).toFixed(0)}% ছাড়</small></div><div class="num" style="font-weight:600">${tk(s[7])}</div></div>`).join("")}
         ${g.no.indexOf("ARCHIVE-") === 0 ? "" : `<div class="inv-acts">
           <button class="act" data-invprint="${g.r}" data-no="${esc(g.no)}" data-date="${esc(g.date || "")}">🖨 Print</button>
+          <button class="act" data-invdl="${g.r}" data-no="${esc(g.no)}" data-date="${esc(g.date || "")}">⬇ PDF</button>
           <button class="act" data-invedit="${g.r}" data-no="${esc(g.no)}">✏️ সংশোধন</button>
           <button class="act danger" data-invvoid="${g.r}" data-no="${esc(g.no)}">✕ বাতিল</button></div>`}
       </div></div>`;
@@ -1788,6 +1906,8 @@ function showRetailer(i) {
       <button class="act primary" data-payfor="${i}">৳ Payment যোগ</button>
       <button class="act" data-stmt="${i}">Statement / WhatsApp</button>
       <button class="act" data-cpnew="${i}">📣 Campaign</button>
+      ${PDF_DIR.ok ? `<button class="act" data-pdfsync="${i}" title="Drive-এ থাকা এই retailer-এর যে PDF কম্পিউটারের ফোল্ডারে নেই, সব নামায়">📁 সব PDF ফোল্ডারে</button>
+      <button class="act" data-pdfdir title="PDF রাখার মূল ফোল্ডার বদলান">⚙️ মূল ফোল্ডার</button>` : ""}
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
       ${r.phone ? `<a class="call" href="tel:${esc(r.phone)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>${esc(r.phone)}</a>` : ""}
@@ -3340,7 +3460,7 @@ function confirmInvoice() {
         ${r.masterOk ? "" : `<div style="font-size:12px;color:var(--warn);margin-top:6px">Master-এ পরের Refresh-এ পুরোপুরি আসবে</div>`}</div>
       <div class="result-links">
         ${r.url ? `<a class="big-link pdf" href="${esc(r.url)}" target="_blank">PDF দেখুন</a>` : `<div class="empty">PDF হয়নি — Master-এর System Log দেখুন</div>`}
-        ${r.download ? `<a class="big-link dl" href="${esc(r.download)}" target="_blank">⬇ PDF Download</a>` : ""}
+        ${r.download || r.url ? `<button class="big-link dl" data-pdfsave="${esc(r.download || r.url)}" data-shop="${esc(r.retailer)}">⬇ PDF Download${PDF_DIR.ok ? " (ফোল্ডারে)" : ""}</button>` : ""}
         ${r.url || r.download ? `<button class="big-link dl" data-print="${esc(r.url || r.download)}">🖨 Print</button>` : ""}
         <a class="big-link wa" href="${esc(r.wa)}" target="_blank">WhatsApp-এ পাঠান</a>
       </div>`;
