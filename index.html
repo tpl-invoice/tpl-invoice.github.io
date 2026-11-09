@@ -1296,6 +1296,17 @@ async function writePdf_(root, retailer, name, blob, dir) {
   return dir.name;
 }
 const pdfName_ = n => safeName_(String(n || "Invoice").replace(/\.pdf$/i, "")) + ".pdf";
+// কম্পিউটারের ফোল্ডারে নামের শুরুতে তারিখ — "Wafilife Invoice - 9 November 2026 (2)" → "2026-11-09 Wafilife Invoice (2)",
+// তাই ফোল্ডারে নাম অনুযায়ী সাজালেই তারিখ অনুযায়ী সাজানো (উল্টো ক্রমে = সবচেয়ে নতুন উপরে)
+const PDF_MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+function localPdfName_(n) {
+  const base = String(n || "Invoice").replace(/\.pdf$/i, "").trim();
+  const m = base.match(/^(.*?)[\s-]*(\d{1,2}) ([A-Za-z]+),? (\d{4})(.*)$/);
+  const mi = m ? PDF_MONTHS.indexOf(m[3].toLowerCase()) : -1;
+  if (mi < 0) return pdfName_(base);
+  const p2 = x => String(x).padStart(2, "0");
+  return pdfName_(`${m[4]}-${p2(mi + 1)}-${p2(m[2])} ${m[1].trim()}${m[5]}`);
+}
 // সার্ভার ডাক Promise হিসেবে — password চাইলে জিজ্ঞেস করে আবার
 function gsCall_(fn, args) {
   return new Promise((res, rej) => {
@@ -1317,7 +1328,7 @@ async function savePdf(retailer, fn, args, btn) {
   btn.dataset.busy = "1"; btn.innerHTML = "⏳ নামানো হচ্ছে…";
   try {
     const r = JSON.parse(await gsCall_(fn, args));
-    const blob = b64Blob_(r.b64), name = pdfName_(r.name);
+    const blob = b64Blob_(r.b64), name = localPdfName_(r.name);
     if (root) {
       const where = await writePdf_(root, retailer, name, blob);
       toast(`✓ ${root.name} › ${where} ফোল্ডারে সেভ হয়েছে`);
@@ -1340,11 +1351,11 @@ async function syncRetailerPdfs(retailer, btn) {
     const dir = await retailerDir_(root, retailer);
     const have = new Set();
     for await (const k of dir.keys()) have.add(k);
-    const need = list.filter(f => !have.has(pdfName_(f.name)));
+    const need = list.filter(f => !have.has(localPdfName_(f.name)) && !have.has(pdfName_(f.name)));
     if (!need.length) { toast(`✓ সব ${list.length}টা PDF আগেই ${dir.name} ফোল্ডারে আছে`); return; }
     for (const f of need) {
       btn.innerHTML = `⏳ ${done + failed + 1} / ${need.length}`;
-      try { const r = JSON.parse(await gsCall_("pdfFile", [f.id])); await writePdf_(root, retailer, pdfName_(f.name), b64Blob_(r.b64), dir); done++; }
+      try { const r = JSON.parse(await gsCall_("pdfFile", [f.id])); await writePdf_(root, retailer, localPdfName_(f.name), b64Blob_(r.b64), dir); done++; }
       catch (e) { failed++; }
     }
     toast(`✓ ${done}টা নতুন PDF ${root.name} › ${dir.name} ফোল্ডারে` + (failed ? ` · ${failed}টা হয়নি` : ""));
